@@ -1,0 +1,123 @@
+name: Deploy NGINX Fabric Gateway
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-gateway:
+    name: Deploy NGINX Fabric Gateway
+    runs-on: ubuntu-latest
+    environment: Production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+          
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          if echo "${{ secrets.KUBE_CONFIG }}" | base64 -d >/dev/null 2>&1; then
+            echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          else
+            echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+          fi
+          chmod 600 $HOME/.kube/config
+          
+          # Verify connection
+          kubectl version --client
+          kubectl cluster-info
+
+      - name: Install Gateway API CRDs
+        run: |
+          echo "=== Installing Gateway API CRDs ==="
+          kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml
+          
+          echo "=== Waiting for CRDs to be established ==="
+          kubectl wait --for condition=established --timeout=60s crd/gatewayclasses.gateway.networking.k8s.io
+          kubectl wait --for condition=established --timeout=60s crd/gateways.gateway.networking.k8s.io
+          kubectl wait --for condition=established --timeout=60s crd/httproutes.gateway.networking.k8s.io
+
+      - name: Deploy NGINX Fabric Gateway Controller
+        run: |
+          echo "=== Deploying NGINX Fabric Gateway Controller ==="
+          kubectl apply -k kustomize/base/nginx-fabric
+          
+          echo "=== Waiting for controller deployment ==="
+          kubectl wait --for=condition=available --timeout=300s deployment/nginx-gateway -n nginx-gateway || true
+          
+          echo "=== Controller status ==="
+          kubectl get all -n nginx-gateway
+
+      - name: Wait for LoadBalancer IP
+        id: get-ip
+        run: |
+          echo "=== Waiting for LoadBalancer IP assignment ==="
+          for i in {1..60}; do
+            IP=$(kubectl get svc nginx-gateway -n nginx-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+            if [ -n "$IP" ]; then
+              echo "LoadBalancer IP assigned: $IP"
+              echo "LOADBALANCER_IP=$IP" >> $GITHUB_OUTPUT
+              break
+            fi
+            echo "Waiting for LoadBalancer IP... (attempt $i/60)"
+            sleep 5
+          done
+          
+          if [ -z "$IP" ]; then
+            echo "Warning: LoadBalancer IP not assigned after 5 minutes"
+            kubectl describe svc nginx-gateway -n nginx-gateway
+          fi
+
+      - name: Deploy Gateway Resources
+        run: |
+          echo "=== Deploying Gateway API resources ==="
+          # First deploy the base Gateway and routes
+          kubectl apply -k kustomize/base/gateway-api
+          
+          echo "=== Waiting for Gateway to be ready ==="
+          kubectl wait --for=condition=ready --timeout=120s gateway/scavenger-hunt-gateway -n scavenger-hunt-prod || true
+          
+          echo "=== Gateway status ==="
+          kubectl get gateway -A
+          kubectl describe gateway scavenger-hunt-gateway -n scavenger-hunt-prod || true
+
+      - name: Deploy Policies
+        run: |
+          echo "=== Deploying NGINX Fabric policies ==="
+          kubectl apply -k kustomize/base/policies
+          
+          echo "=== Policy status ==="
+          kubectl get clientsettingspolicy,observabilitypolicy -A
+
+      - name: Summary
+        run: |
+          echo "=== Deployment Summary ==="
+          echo
+          if [ -n "${{ steps.get-ip.outputs.LOADBALANCER_IP }}" ]; then
+            echo "✅ NGINX Fabric Gateway deployed successfully!"
+            echo "📍 LoadBalancer IP: ${{ steps.get-ip.outputs.LOADBALANCER_IP }}"
+            echo
+            echo "=== Required DNS Configuration ==="
+            echo "Configure these A records with your DNS provider:"
+            echo
+            echo "scavenger-hunt.linsmeyer.com     A    ${{ steps.get-ip.outputs.LOADBALANCER_IP }}"
+            echo "*.scavenger-hunt.linsmeyer.com   A    ${{ steps.get-ip.outputs.LOADBALANCER_IP }}"
+            echo
+            echo "=== Next Steps ==="
+            echo "1. Configure DNS records as shown above"
+            echo "2. Wait 5-10 minutes for DNS propagation"
+            echo "3. Install cert-manager: kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.0/cert-manager.yaml"
+            echo "4. Deploy the application: kubectl apply -k kustomize/overlays/production"
+          else
+            echo "⚠️  LoadBalancer IP not assigned. Check the service status:"
+            echo "kubectl get svc nginx-gateway -n nginx-gateway"
+            kubectl get svc -n nginx-gateway
+          fi
