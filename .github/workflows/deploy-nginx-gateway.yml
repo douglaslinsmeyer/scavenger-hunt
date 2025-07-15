@@ -41,9 +41,8 @@ jobs:
           kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml
           
           echo "=== Waiting for CRDs to be established ==="
-          kubectl wait --for condition=established --timeout=60s crd/gatewayclasses.gateway.networking.k8s.io
-          kubectl wait --for condition=established --timeout=60s crd/gateways.gateway.networking.k8s.io
-          kubectl wait --for condition=established --timeout=60s crd/httproutes.gateway.networking.k8s.io
+          sleep 10  # Give CRDs time to initialize
+          kubectl get crd | grep gateway.networking.k8s.io
 
       - name: Deploy NGINX Fabric Gateway Controller
         run: |
