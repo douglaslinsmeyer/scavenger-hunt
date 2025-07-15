@@ -1,0 +1,84 @@
+name: Force Redeploy
+
+on:
+  workflow_dispatch:
+
+env:
+  NAMESPACE: scavenger-hunt-prod
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: douglaslinsmeyer/scavenger-hunt
+
+jobs:
+  force-redeploy:
+    name: Force Redeploy
+    runs-on: ubuntu-latest
+    environment: Production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          # Check if the secret is already base64 encoded or not
+          if echo "${{ secrets.KUBE_CONFIG }}" | base64 -d >/dev/null 2>&1; then
+            echo "Kubeconfig is base64 encoded, decoding..."
+            echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          else
+            echo "Kubeconfig is plain text, using directly..."
+            echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+          fi
+          chmod 600 $HOME/.kube/config
+          
+          # Verify kubectl connection
+          kubectl version --client
+          kubectl cluster-info
+
+      - name: Delete existing deployments
+        run: |
+          echo "=== Deleting existing deployments ==="
+          kubectl delete deployments --all -n ${{ env.NAMESPACE }} || true
+          
+          echo "=== Waiting for pods to terminate ==="
+          kubectl wait --for=delete pod --all -n ${{ env.NAMESPACE }} --timeout=60s || true
+          
+          echo "=== Current state ==="
+          kubectl get all -n ${{ env.NAMESPACE }}
+
+      - name: Update image tags
+        working-directory: ./kustomize/overlays/production
+        run: |
+          kustomize edit set image \
+            scavenger-hunt-backend=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:${{ github.sha }} \
+            scavenger-hunt-player=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-player:${{ github.sha }} \
+            scavenger-hunt-admin=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-admin:${{ github.sha }}
+
+      - name: Deploy fresh
+        run: |
+          echo "=== Deploying fresh ==="
+          kustomize build ./kustomize/overlays/production | kubectl apply -f -
+          
+          echo "=== Waiting for deployments ==="
+          kubectl get deployments -n ${{ env.NAMESPACE }}
+          
+          # Wait for each deployment individually
+          echo "Waiting for backend..."
+          kubectl wait --for=condition=available --timeout=300s deployment/backend -n ${{ env.NAMESPACE }} || true
+          
+          echo "Waiting for player..."
+          kubectl wait --for=condition=available --timeout=300s deployment/player -n ${{ env.NAMESPACE }} || true
+          
+          echo "Waiting for admin..."
+          kubectl wait --for=condition=available --timeout=300s deployment/admin -n ${{ env.NAMESPACE }} || true
+          
+          echo "=== Final state ==="
+          kubectl get all -n ${{ env.NAMESPACE }}
