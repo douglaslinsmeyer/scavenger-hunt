@@ -21,7 +21,7 @@ spec:
   acme:
     # Production Let's Encrypt server
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: admin@linsmeyer.com  # Update this to receive certificate expiry notifications
+    email: doug@linsmeyer.com  # Update this to receive certificate expiry notifications
     # Store the private key in this secret
     privateKeySecretRef:
       name: letsencrypt-prod-private-key
@@ -44,7 +44,7 @@ spec:
   acme:
     # Staging server for testing (doesn't have rate limits)
     server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: admin@linsmeyer.com
+    email: doug@linsmeyer.com
     privateKeySecretRef:
       name: letsencrypt-staging-private-key
     solvers:
@@ -61,7 +61,7 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: admin@linsmeyer.com
+    email: doug@linsmeyer.com
     privateKeySecretRef:
       name: letsencrypt-dns-private-key
     solvers:
