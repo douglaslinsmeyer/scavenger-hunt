@@ -9,11 +9,11 @@ spec:
         - name: backend
           resources:
             requests:
-              cpu: 250m
-              memory: 256Mi
+              cpu: 100m
+              memory: 128Mi
             limits:
-              cpu: 1000m
-              memory: 1Gi
+              cpu: 500m
+              memory: 512Mi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -26,11 +26,11 @@ spec:
         - name: player
           resources:
             requests:
-              cpu: 250m
-              memory: 256Mi
+              cpu: 100m
+              memory: 128Mi
             limits:
-              cpu: 1000m
-              memory: 1Gi
+              cpu: 500m
+              memory: 512Mi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -43,8 +43,8 @@ spec:
         - name: admin
           resources:
             requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
               cpu: 200m
               memory: 256Mi
-            limits:
-              cpu: 500m
-              memory: 512Mi
