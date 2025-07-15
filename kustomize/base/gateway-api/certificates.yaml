@@ -36,7 +36,7 @@ spec:
     solvers:
     - http01:
         ingress:
-          class: nginx
+          ingressClassName: nginx
 ---
 # ClusterIssuer for Let's Encrypt Staging (for testing)
 apiVersion: cert-manager.io/v1
@@ -52,7 +52,7 @@ spec:
     solvers:
     - http01:
         ingress:
-          class: nginx
+          ingressClassName: nginx
 ---
 # Self-signed certificate for development
 apiVersion: cert-manager.io/v1
