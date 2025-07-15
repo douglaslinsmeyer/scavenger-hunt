@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: backend
+          env:
+            - name: NODE_ENV
+              value: "development"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: player
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: player
+          env:
+            - name: NODE_ENV
+              value: "development"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: admin
+          env:
+            - name: NODE_ENV
+              value: "development"

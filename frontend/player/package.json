@@ -1,0 +1,36 @@
+{
+  "name": "@scavenger-hunt/player",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "lint": "next lint",
+    "test": "jest",
+    "test:deployment": "jest --config jest.config.deployment.js",
+    "test:watch": "jest --watch",
+    "clean": "rm -rf .next coverage"
+  },
+  "dependencies": {
+    "next": "15.4.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.7.0",
+    "@testing-library/react": "^16.2.0",
+    "@testing-library/user-event": "^15.0.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "axios": "^1.7.10",
+    "eslint": "^9.20.0",
+    "eslint-config-next": "15.4.0",
+    "jest": "^30.0.4",
+    "jest-environment-jsdom": "^30.0.0",
+    "ts-jest": "^30.0.0",
+    "typescript": "^5.8.3"
+  }
+}

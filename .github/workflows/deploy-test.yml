@@ -1,0 +1,95 @@
+name: Test Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test deployment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/scavenger-hunt
+
+jobs:
+  test-connection:
+    name: Test Kubernetes Connection
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+          
+          echo "Testing connection to Kubernetes cluster..."
+          kubectl version --client
+          
+      - name: Test cluster access
+        run: |
+          echo "Getting cluster information..."
+          kubectl cluster-info || { echo "Failed to connect to cluster"; exit 1; }
+          
+          echo "Getting nodes..."
+          kubectl get nodes
+          
+          echo "Getting namespaces..."
+          kubectl get namespaces
+          
+      - name: Check namespace
+        run: |
+          NAMESPACE="scavenger-hunt-${{ github.event.inputs.environment == 'production' && 'prod' || github.event.inputs.environment }}"
+          echo "Checking namespace: $NAMESPACE"
+          
+          # Create namespace if it doesn't exist
+          kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+          
+          # List resources in namespace
+          echo "Resources in namespace $NAMESPACE:"
+          kubectl get all -n $NAMESPACE
+          
+      - name: Verify deployment capability
+        run: |
+          NAMESPACE="scavenger-hunt-${{ github.event.inputs.environment == 'production' && 'prod' || github.event.inputs.environment }}"
+          
+          # Test creating a simple deployment
+          cat <<EOF | kubectl apply -f - --dry-run=server
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: test-deployment
+            namespace: $NAMESPACE
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: test
+            template:
+              metadata:
+                labels:
+                  app: test
+              spec:
+                containers:
+                - name: test
+                  image: nginx:alpine
+                  ports:
+                  - containerPort: 80
+          EOF
+          
+          echo "✅ Deployment capability verified - dry run successful"

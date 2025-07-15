@@ -1,0 +1,91 @@
+# Scavenger Hunt game application
+
+
+## Overall Plan
+
+1. **Objective**
+   - Develop a web application for organizing and participating in scavenger hunts.
+   - Provide a platform for users to create, share, and join scavenger hunts.
+   - Enable real-time updates and a leaderboard for competitive play.
+   - Photo submission feature for scavenger hunts.
+
+2. **User Roles**
+    - **Administrators**: Oversee the platform, manage users and hunts. Authenticate via social login (Google, Facebook, etc.)
+    - **Organizers**: Create, share, and manage scavenger hunts. Authenticate via social login (Google, Facebook, etc.)
+    - **Players**: Participate in scavenger hunts. Authenticate via username/PIN per hunt (set when joining via invitation link)
+
+3. **Features**
+    - User registration and authentication:
+        - Administrators and Organizers: Social login (Google, Facebook, etc.)
+        - Players: Username/PIN per hunt (set when joining via invitation link)
+        - Admin and Organizer can reset Player's PIN if forgotten
+    - Creation of scavenger hunts by Organizers.
+    - Private hunts only - accessible via invitation link.
+    - Real-time updates for hunt progress using WebSockets.
+    - Leaderboard to display all players in a given hunt.
+    - Mobile-friendly design for easy access on smartphones.
+    - Admin panel for managing users and hunts.
+    - Task types:
+        - Photo submission (with manual verification by organizers)
+        - Checkbox (completed/not completed)
+        - GPS location verification
+    - Competitive and cooperative modes:
+        - Competitive: Players compete against each other for points
+        - Cooperative: Players work together to complete tasks, sharing progress and points
+    - Points system for tasks (no negative points or bonus multipliers).
+    - Points system can be disabled for certain hunts if desired by the organizer.
+    - Option for organizers to set a time limit for hunts, with automatic end of the hunt when the time expires.
+    - Option for organizers to set a maximum number of players for each hunt.
+    - Task Bulk Upload feature for organizers to quickly add multiple tasks to a hunt (in JSON format).
+    - Task editing feature for organizers to modify tasks after creation.
+    - Multiple organizers can manage a single hunt with assigned roles and permissions.
+    - Hunt statistics/analytics for organizers:
+        - Number of players
+        - Tasks completed
+        - Photos submitted
+        - Hunt duration/remaining time
+        - Points scored by players
+    - Offline capability with data sync when back online.
+    - Multi-language support with language switching in user settings.
+    - All UI's have a dark mode and light mode.
+
+4. **Technical Stack**
+    - **Frontend**: Next.js, React, Tailwind CSS for styling.
+    - **Backend**: Node.js, Express, WebSocket for real-time communication.
+    - **API Design**: Service-oriented REST API with OpenAPI/Swagger documentation.
+    - **Authentication**: JWT-based authentication with role-based access control.
+    - **File Storage**: Persistent disk within Kubernetes cluster for photo storage.
+    - **Caching**: Offline caching using local storage or IndexedDB with server sync.
+    - **Security**: HTTPS, CORS enabled for API.
+    - **Error Handling**: 
+        - Structured error responses with appropriate HTTP status codes
+        - Centralized logging service (e.g., ELK stack, Prometheus)
+        - Logging with libraries like Winston
+    - **Administration**: Admin panel built with React for managing users and hunts.
+    - **Database**: PostgreSQL for data storage.
+    - **Deployment**:
+        - CI/CD using GitHub Actions.
+        - Local development using Docker (kubernetes).
+        - Production deployment on a Rackspace Spot (vanilla Kubernetes).
+    - **Version Control**: GitHub for source code management.
+
+5. **Data Models**
+    - **User**: Contains user information, roles, and authentication details.
+    - **Hunt**: Contains hunt details, tasks, participants, status (draft, active, paused, completed), type (competitive/cooperative), metadata, start datetime, and end datetime.
+    - **Task**: Contains task description, type (photo, checkbox, GPS), point value, and completion status.
+    - **TaskCompletion**: Records when a task is completed by a player, including timestamp and any submitted data.
+    - **Photo**: Links to photos submitted by players for task verification.
+    - **HuntOrganizer**: Links multiple organizers to hunts with their permissions.
+
+6. **Non-Functional Requirements**
+    - **Performance**: Designed for low volume, 10-20 concurrent users per hunt.
+    - **Data Retention**: Indefinite storage of photos and completed hunts.
+    - **Browser Support**: Modern browsers (latest versions of Chrome, Firefox, Safari, Edge).
+    - **Offline Capability**: Cache hunt data and photos for offline use with sync when back online.
+    - **Internationalization**: Multi-language support with language switching.
+
+7. **Hunt States**
+    - **Draft**: Hunt is being created and not yet published, cannot be joined.
+    - **Active**: Hunt is live and players can participate and join.
+    - **Paused**: Hunt is temporarily paused, no new submissions allowed, players can still join.
+    - **Completed**: Hunt has ended, no further submissions accepted.

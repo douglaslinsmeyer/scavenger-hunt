@@ -1,0 +1,29 @@
+{
+  "name": "scavenger-hunt",
+  "version": "0.1.0",
+  "description": "Location-based scavenger hunt application",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend/player",
+    "frontend/admin"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:player\" \"npm run dev:admin\"",
+    "dev:backend": "npm run dev -w backend",
+    "dev:player": "npm run dev -w @scavenger-hunt/player",
+    "dev:admin": "npm run dev -w @scavenger-hunt/admin",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "test:deployment": "npm run test:deployment --workspaces",
+    "lint": "npm run lint --workspaces",
+    "clean": "npm run clean --workspaces && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  }
+}

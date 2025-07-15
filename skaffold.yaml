@@ -1,0 +1,87 @@
+apiVersion: skaffold/v4beta8
+kind: Config
+metadata:
+  name: scavenger-hunt
+
+build:
+  artifacts:
+    - image: scavenger-hunt-backend
+      context: backend
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: 'src/**/*.ts'
+            dest: /app
+            strip: src/
+
+    - image: scavenger-hunt-player
+      context: frontend/player
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: 'app/**/*.tsx'
+            dest: /app
+            strip: app/
+          - src: 'app/**/*.ts'
+            dest: /app
+            strip: app/
+
+    - image: scavenger-hunt-admin
+      context: frontend/admin
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: 'app/**/*.tsx'
+            dest: /app
+            strip: app/
+          - src: 'app/**/*.ts'
+            dest: /app
+            strip: app/
+
+  local:
+    push: false
+    useBuildkit: true
+
+deploy:
+  kubectl: {}
+  kustomize:
+    paths:
+      - kustomize/overlays/development
+
+portForward:
+  - resourceType: service
+    resourceName: dev-backend
+    namespace: scavenger-hunt-dev
+    port: 80
+    localPort: 3000
+
+  - resourceType: service
+    resourceName: dev-player
+    namespace: scavenger-hunt-dev
+    port: 80
+    localPort: 3001
+
+  - resourceType: service
+    resourceName: dev-admin
+    namespace: scavenger-hunt-dev
+    port: 80
+    localPort: 3002
+
+profiles:
+  - name: staging
+    deploy:
+      kustomize:
+        paths:
+          - kustomize/overlays/staging
+
+  - name: production
+    build:
+      tagPolicy:
+        gitCommit: {}
+    deploy:
+      kustomize:
+        paths:
+          - kustomize/overlays/production
