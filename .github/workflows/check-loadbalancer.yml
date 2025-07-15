@@ -1,0 +1,41 @@
+name: Check LoadBalancer Status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-lb:
+    name: Check LoadBalancer
+    runs-on: ubuntu-latest
+    environment: Production
+    
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          if echo "${{ secrets.KUBE_CONFIG }}" | base64 -d >/dev/null 2>&1; then
+            echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          else
+            echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+          fi
+          chmod 600 $HOME/.kube/config
+
+      - name: Check all LoadBalancer services
+        run: |
+          echo "=== Checking all LoadBalancer services across all namespaces ==="
+          kubectl get svc --all-namespaces -o wide | grep LoadBalancer || echo "No LoadBalancer services found"
+          
+          echo -e "\n=== Checking Ingress resources ==="
+          kubectl get ingress --all-namespaces || echo "No Ingress resources found"
+          
+          echo -e "\n=== Checking nginx-gateway namespace ==="
+          kubectl get all -n nginx-gateway 2>/dev/null || echo "nginx-gateway namespace not found"
+          
+          echo -e "\n=== Checking for NGINX Ingress Controller ==="
+          kubectl get svc -n ingress-nginx 2>/dev/null || echo "No ingress-nginx namespace"
+          kubectl get svc -n kube-system | grep -i nginx || echo "No nginx in kube-system"
