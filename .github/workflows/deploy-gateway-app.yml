@@ -1,0 +1,122 @@
+name: Deploy Gateway and Application
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-app:
+    name: Deploy Gateway Resources and Application
+    runs-on: ubuntu-latest
+    environment: Production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+          
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          if echo "${{ secrets.KUBE_CONFIG }}" | base64 -d >/dev/null 2>&1; then
+            echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          else
+            echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+          fi
+          chmod 600 $HOME/.kube/config
+          
+          # Verify connection
+          kubectl version --client
+          kubectl cluster-info
+
+      - name: Deploy ClusterIssuers
+        run: |
+          echo "=== Deploying cert-manager ClusterIssuers ==="
+          kubectl apply -k kustomize/base/cert-manager
+          
+          echo "=== Verifying ClusterIssuers ==="
+          kubectl get clusterissuer
+
+      - name: Deploy Gateway Resources
+        run: |
+          echo "=== Deploying Gateway API resources ==="
+          kubectl apply -k kustomize/base/gateway-api
+          
+          echo "=== Waiting for Gateway to be ready ==="
+          kubectl wait --for=condition=ready --timeout=120s gateway/scavenger-hunt-gateway -n scavenger-hunt-prod || true
+          
+          echo "=== Gateway status ==="
+          kubectl get gateway -A
+          kubectl describe gateway scavenger-hunt-gateway -n scavenger-hunt-prod || true
+
+      - name: Deploy Policies
+        run: |
+          echo "=== Deploying NGINX Fabric policies ==="
+          kubectl apply -k kustomize/base/policies || echo "Note: Some policies may fail if CRDs are not ready"
+          
+          echo "=== Policy status ==="
+          kubectl get clientsettingspolicy,observabilitypolicy -A || true
+
+      - name: Deploy Certificates
+        run: |
+          echo "=== Deploying SSL certificates ==="
+          # Apply just the Certificate resources
+          kubectl apply -f kustomize/base/gateway-api/certificates.yaml
+          
+          echo "=== Certificate status ==="
+          kubectl get certificate -A
+          kubectl describe certificate scavenger-hunt-tls -n scavenger-hunt-prod || true
+
+      - name: Check Certificate Issuance
+        run: |
+          echo "=== Waiting for certificate to be issued ==="
+          for i in {1..30}; do
+            STATUS=$(kubectl get certificate scavenger-hunt-tls -n scavenger-hunt-prod -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "False")
+            if [ "$STATUS" = "True" ]; then
+              echo "✅ Certificate issued successfully!"
+              break
+            fi
+            echo "Waiting for certificate... (attempt $i/30)"
+            kubectl describe certificate scavenger-hunt-tls -n scavenger-hunt-prod | grep -A5 "Status:" || true
+            sleep 10
+          done
+
+      - name: Verify DNS and SSL
+        run: |
+          echo "=== DNS Resolution Test ==="
+          nslookup scavenger-hunt.linsmeyer.com || echo "DNS may still be propagating"
+          
+          echo
+          echo "=== LoadBalancer Status ==="
+          kubectl get svc nginx-gateway -n nginx-gateway
+          
+          echo
+          echo "=== Gateway Routes ==="
+          kubectl get httproute -A
+
+      - name: Summary
+        run: |
+          echo "=== Deployment Summary ==="
+          echo
+          echo "✅ Gateway Resources deployed!"
+          echo "📍 LoadBalancer IP: 174.143.59.103"
+          echo "🌐 Domain: scavenger-hunt.linsmeyer.com"
+          echo
+          echo "=== Access Points ==="
+          echo "Main Site: https://scavenger-hunt.linsmeyer.com"
+          echo "API: https://scavenger-hunt.linsmeyer.com/api"
+          echo "Admin: https://scavenger-hunt.linsmeyer.com/admin"
+          echo
+          echo "=== Certificate Status ==="
+          kubectl get certificate scavenger-hunt-tls -n scavenger-hunt-prod -o wide || true
+          echo
+          echo "=== Troubleshooting ==="
+          echo "Check certificate events: kubectl describe certificate scavenger-hunt-tls -n scavenger-hunt-prod"
+          echo "Check cert-manager logs: kubectl logs -n cert-manager deployment/cert-manager"
+          echo "Check challenges: kubectl get challenges -A"
