@@ -33,22 +33,6 @@ spec:
       kinds:
       - group: gateway.networking.k8s.io
         kind: HTTPRoute
-  # WebSocket listener (uses same port as HTTPS)
-  - name: websocket
-    protocol: HTTPS
-    port: 443
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - group: ""
-        kind: Secret
-        name: scavenger-hunt-tls
-    allowedRoutes:
-      namespaces:
-        from: Same
-      kinds:
-      - group: gateway.networking.k8s.io
-        kind: HTTPRoute
   # Health check listener (internal)
   - name: health
     protocol: HTTP
