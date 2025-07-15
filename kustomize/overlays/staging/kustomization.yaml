@@ -19,6 +19,9 @@ replicas:
   - name: admin
     count: 1
 
+patchesStrategicMerge:
+  - gateway-patch.yaml
+
 configMapGenerator:
   - name: app-config
     literals:

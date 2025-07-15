@@ -1,0 +1,136 @@
+# Timeout and Retry Policies for NGINX Gateway Fabric
+# Configures appropriate timeouts for different service types
+---
+# Backend API Timeout Policy
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: api-timeout-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: backend-api-route
+  timeouts:
+    # Standard API request timeout
+    request: 30s
+    # Keep connection alive for efficiency
+    keepalive: 65s
+    # Proxy timeouts
+    proxy:
+      connect: 10s
+      send: 30s
+      read: 30s
+  retries:
+    # Retry failed requests up to 3 times
+    attempts: 3
+    perTryTimeout: 10s
+    retryOn:
+    - 5xx
+    - reset
+    - refused
+    - timeout
+    backoff:
+      baseInterval: 0.1s
+      maxInterval: 2s
+---
+# WebSocket Timeout Policy - Extended for real-time connections
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: websocket-timeout-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: backend-api-route
+    sectionName: websocket-rule
+  timeouts:
+    # Long timeout for WebSocket connections
+    request: 3600s
+    keepalive: 3600s
+    proxy:
+      connect: 10s
+      send: 3600s
+      read: 3600s
+  # No retries for WebSocket connections
+  retries:
+    attempts: 0
+---
+# Frontend Apps Timeout Policy
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: frontend-timeout-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: admin-dashboard-route
+  timeouts:
+    # Shorter timeout for static content
+    request: 15s
+    keepalive: 65s
+    proxy:
+      connect: 5s
+      send: 15s
+      read: 15s
+  retries:
+    attempts: 2
+    perTryTimeout: 5s
+    retryOn:
+    - 5xx
+    - refused
+    - timeout
+---
+# Player App Timeout Policy - Same as admin
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: player-timeout-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: player-app-route
+  timeouts:
+    request: 15s
+    keepalive: 65s
+    proxy:
+      connect: 5s
+      send: 15s
+      read: 15s
+  retries:
+    attempts: 2
+    perTryTimeout: 5s
+    retryOn:
+    - 5xx
+    - refused
+    - timeout
+---
+# Circuit Breaker Policy - Prevent cascading failures
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: circuit-breaker-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: scavenger-hunt-gateway
+  circuitBreaker:
+    # Trip circuit after 5 consecutive failures
+    consecutiveErrors: 5
+    # Check every 10 seconds
+    interval: 10s
+    # 30% error rate threshold
+    errorPercentThreshold: 30
+    # Minimum requests before evaluating
+    minimumRequests: 10
+    # Recovery timeout
+    sleepWindow: 30s

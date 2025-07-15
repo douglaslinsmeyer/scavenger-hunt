@@ -1,0 +1,85 @@
+# Rate Limiting Policy for NGINX Gateway Fabric
+# Prevents abuse and ensures fair usage across all services
+---
+# API Rate Limiting - Stricter limits for API endpoints
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: api-ratelimit-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: backend-api-route
+  rateLimit:
+    # 100 requests per minute per IP address
+    requests: 100
+    burst: 20
+    key: ${remote_addr}
+    zoneSize: 10m
+    dryRun: false
+    logLevel: error
+    rejectCode: 429
+---
+# Admin Dashboard Rate Limiting - Moderate limits
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: admin-ratelimit-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: admin-dashboard-route
+  rateLimit:
+    # 300 requests per minute per IP address
+    requests: 300
+    burst: 50
+    key: ${remote_addr}
+    zoneSize: 10m
+    dryRun: false
+    logLevel: warn
+    rejectCode: 429
+---
+# Player App Rate Limiting - More lenient for game interaction
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: player-ratelimit-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: player-app-route
+  rateLimit:
+    # 500 requests per minute per IP address
+    requests: 500
+    burst: 100
+    key: ${remote_addr}
+    zoneSize: 10m
+    dryRun: false
+    logLevel: warn
+    rejectCode: 429
+---
+# Connection Limiting - Prevent connection exhaustion
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: connection-limit-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: scavenger-hunt-gateway
+  connectionLimit:
+    # Maximum 50 concurrent connections per IP
+    connections: 50
+    key: ${remote_addr}
+    zoneSize: 10m
+    dryRun: false
+    logLevel: error
+    rejectCode: 503

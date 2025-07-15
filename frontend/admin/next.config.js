@@ -4,9 +4,14 @@ const nextConfig = {
   swcMinify: true,
   output: 'standalone',
   
+  // Configure base path for admin app when deployed
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '/admin',
+  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '/admin',
+  
   // Environment variables
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+    NEXT_PUBLIC_BASE_PATH: process.env.NEXT_PUBLIC_BASE_PATH || '/admin',
   },
 
   // Headers for security

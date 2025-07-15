@@ -11,7 +11,13 @@ resources:
   - player-service.yaml
   - admin-deployment.yaml
   - admin-service.yaml
-  - ingress.yaml
+  # Comment out old ingress when using NGINX Fabric Gateway
+  # - ingress.yaml
+  
+  # NGINX Fabric Gateway resources
+  - nginx-fabric/
+  - gateway-api/
+  - policies/
 
 commonLabels:
   app.kubernetes.io/name: scavenger-hunt

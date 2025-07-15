@@ -1,0 +1,118 @@
+# Development-specific patches for NGINX Fabric Gateway
+---
+# Update Gateway for development (no TLS)
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: scavenger-hunt-gateway
+  namespace: scavenger-hunt-dev
+spec:
+  listeners:
+  # Only HTTP in development
+  - name: http
+    protocol: HTTP
+    port: 80
+    allowedRoutes:
+      namespaces:
+        from: Same
+  # Remove HTTPS listeners for development
+  - name: https
+    $patch: delete
+  - name: websocket
+    $patch: delete
+  addresses:
+  - type: IPAddress
+    value: ""  # LoadBalancer will assign
+---
+# Update HTTPRoutes with development hostnames
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: backend-api-route
+  namespace: scavenger-hunt-dev
+spec:
+  parentRefs:
+  - name: scavenger-hunt-gateway
+    sectionName: http
+  hostnames:
+  - localhost
+  - scavenger-hunt.local
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: admin-dashboard-route
+  namespace: scavenger-hunt-dev
+spec:
+  parentRefs:
+  - name: scavenger-hunt-gateway
+    sectionName: http
+  hostnames:
+  - localhost
+  - scavenger-hunt.local
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: player-app-route
+  namespace: scavenger-hunt-dev
+spec:
+  parentRefs:
+  - name: scavenger-hunt-gateway
+    sectionName: http
+  hostnames:
+  - localhost
+  - scavenger-hunt.local
+---
+# Remove HTTPS redirect in development
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: https-redirect
+  namespace: scavenger-hunt-dev
+spec:
+  $patch: delete
+---
+# Very relaxed rate limits for development
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: api-ratelimit-policy
+  namespace: scavenger-hunt-dev
+spec:
+  rateLimit:
+    requests: 1000  # Very high for development
+    burst: 200
+    dryRun: true    # Don't actually enforce in dev
+---
+# Disable connection limits in development
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: connection-limit-policy
+  namespace: scavenger-hunt-dev
+spec:
+  connectionLimit:
+    connections: 1000
+    dryRun: true
+---
+# Full tracing in development
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ObservabilityPolicy
+metadata:
+  name: tracing-policy
+  namespace: scavenger-hunt-dev
+spec:
+  tracing:
+    otel:
+      samplingRate: 1.0  # 100% sampling in development
+---
+# Verbose logging in development
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ObservabilityPolicy
+metadata:
+  name: access-log-policy
+  namespace: scavenger-hunt-dev
+spec:
+  accessLog:
+    filters: []  # Log everything including health checks

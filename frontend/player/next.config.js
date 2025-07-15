@@ -4,9 +4,18 @@ const nextConfig = {
   swcMinify: true,
   output: 'standalone',
   
+  // No basePath needed - player app serves from root
+  
   // Environment variables
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+    NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3000',
+  },
+  
+  // Public runtime config for dynamic values
+  publicRuntimeConfig: {
+    apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+    wsUrl: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3000',
   },
 
   // Headers for security

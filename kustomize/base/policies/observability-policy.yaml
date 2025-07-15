@@ -1,0 +1,177 @@
+# Observability Policies for NGINX Gateway Fabric
+# Configures logging, metrics, and tracing
+---
+# Access Log Policy
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ObservabilityPolicy
+metadata:
+  name: access-log-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: scavenger-hunt-gateway
+  accessLog:
+    enabled: true
+    format: json
+    destination:
+      type: stdout
+    fields:
+    - timestamp
+    - method
+    - uri
+    - protocol
+    - status
+    - responseSize
+    - requestTime
+    - upstreamResponseTime
+    - upstreamAddr
+    - upstreamStatus
+    - remoteAddr
+    - xForwardedFor
+    - userAgent
+    - referer
+    - requestId
+    - host
+    filters:
+    # Don't log health checks
+    - condition: 'uri !~ "^/health"'
+---
+# Metrics Policy
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ObservabilityPolicy
+metadata:
+  name: metrics-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: scavenger-hunt-gateway
+  metrics:
+    enabled: true
+    port: 9113
+    path: /metrics
+    # Prometheus format
+    format: prometheus
+    # Custom labels
+    labels:
+      environment: production
+      service: gateway
+    # Metrics to collect
+    collectors:
+    - requests
+    - connections
+    - upstreams
+    - cache
+    - ssl
+---
+# Tracing Policy
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ObservabilityPolicy
+metadata:
+  name: tracing-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: scavenger-hunt-gateway
+  tracing:
+    enabled: true
+    # OpenTelemetry configuration
+    otel:
+      endpoint: otel-collector.monitoring:4317
+      protocol: grpc
+      serviceName: scavenger-hunt-gateway
+      # Sampling rate (10% of requests)
+      samplingRate: 0.1
+      # Propagation format
+      propagation:
+      - w3c
+      - jaeger
+      # Custom attributes
+      attributes:
+        environment: production
+        version: "1.0.0"
+    # Trace context injection
+    injectHeaders:
+    - traceparent
+    - tracestate
+---
+# Health Check Policy
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ObservabilityPolicy
+metadata:
+  name: healthcheck-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: scavenger-hunt-gateway
+  healthCheck:
+    # Upstream health checks
+    upstream:
+      enabled: true
+      interval: 5s
+      timeout: 3s
+      passes: 2
+      fails: 3
+      path: /health
+      expectedStatus:
+      - 200
+      - 204
+    # Gateway health endpoint
+    gateway:
+      enabled: true
+      port: 8081
+      path: /healthz
+      # Include subsystem checks
+      detailed: true
+---
+# Error Page Policy
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: error-page-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: scavenger-hunt-gateway
+  errorPages:
+    # Custom error pages
+    - codes: [404]
+      response:
+        body: |
+          {
+            "error": "Not Found",
+            "message": "The requested resource was not found",
+            "code": 404
+          }
+        headers:
+          Content-Type: application/json
+    - codes: [429]
+      response:
+        body: |
+          {
+            "error": "Too Many Requests",
+            "message": "Rate limit exceeded. Please try again later",
+            "code": 429
+          }
+        headers:
+          Content-Type: application/json
+          Retry-After: "60"
+    - codes: [500, 502, 503, 504]
+      response:
+        body: |
+          {
+            "error": "Internal Server Error",
+            "message": "An error occurred processing your request",
+            "code": 500
+          }
+        headers:
+          Content-Type: application/json

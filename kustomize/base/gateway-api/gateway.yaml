@@ -1,0 +1,64 @@
+# Gateway defines the entry point for traffic into the cluster
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: scavenger-hunt-gateway
+  namespace: scavenger-hunt-prod
+spec:
+  gatewayClassName: nginx
+  listeners:
+  # HTTP listener - will redirect to HTTPS in production
+  - name: http
+    protocol: HTTP
+    port: 80
+    allowedRoutes:
+      namespaces:
+        from: Same
+      kinds:
+      - group: gateway.networking.k8s.io
+        kind: HTTPRoute
+  # HTTPS listener for secure traffic
+  - name: https
+    protocol: HTTPS
+    port: 443
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - group: ""
+        kind: Secret
+        name: scavenger-hunt-tls
+    allowedRoutes:
+      namespaces:
+        from: Same
+      kinds:
+      - group: gateway.networking.k8s.io
+        kind: HTTPRoute
+  # WebSocket listener (uses same port as HTTPS)
+  - name: websocket
+    protocol: HTTPS
+    port: 443
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - group: ""
+        kind: Secret
+        name: scavenger-hunt-tls
+    allowedRoutes:
+      namespaces:
+        from: Same
+      kinds:
+      - group: gateway.networking.k8s.io
+        kind: HTTPRoute
+  # Health check listener (internal)
+  - name: health
+    protocol: HTTP
+    port: 8080
+    allowedRoutes:
+      namespaces:
+        from: Same
+      kinds:
+      - group: gateway.networking.k8s.io
+        kind: HTTPRoute
+  addresses:
+  - type: IPAddress
+    value: ""  # Will be assigned by LoadBalancer

@@ -1,0 +1,48 @@
+# GatewayClass defines the class of Gateways that will be managed by NGINX Gateway Fabric
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: nginx
+spec:
+  controllerName: gateway.nginx.org/nginx-gateway-controller
+  parametersRef:
+    group: gateway.nginx.org
+    kind: NginxGateway
+    name: nginx-gateway-params
+    namespace: nginx-gateway
+---
+# NGINX Gateway parameters for advanced configuration
+apiVersion: gateway.nginx.org/v1alpha1
+kind: NginxGateway
+metadata:
+  name: nginx-gateway-params
+  namespace: nginx-gateway
+spec:
+  logging:
+    level: info
+    # Enable access logging in JSON format
+    accessLog:
+      format: json
+      fields:
+        - timestamp
+        - method
+        - uri
+        - protocol
+        - status
+        - responseSize
+        - requestTime
+        - upstreamResponseTime
+        - remoteAddr
+        - xForwardedFor
+        - userAgent
+        - referer
+  telemetry:
+    # Enable Prometheus metrics
+    metrics:
+      enabled: true
+      port: 9113
+    # Enable OpenTelemetry tracing
+    tracing:
+      enabled: true
+      endpoint: "otel-collector.monitoring:4317"
+      serviceName: "scavenger-hunt-gateway"

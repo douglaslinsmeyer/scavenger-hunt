@@ -1,0 +1,81 @@
+# Client Body Size Policy for NGINX Gateway Fabric
+# Configures maximum request body sizes for different routes
+---
+# API Body Size Policy - Large for photo uploads
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: api-bodysize-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: backend-api-route
+  body:
+    # 50MB limit for photo uploads
+    maxSize: 50m
+    # Buffer size for better performance
+    bufferSize: 128k
+    # Temporary file handling for large uploads
+    tempFile:
+      enabled: true
+      writeSize: 256k
+      maxSize: 50m
+---
+# Admin Dashboard Body Size Policy - Moderate size
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: admin-bodysize-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: admin-dashboard-route
+  body:
+    # 10MB limit for admin operations
+    maxSize: 10m
+    bufferSize: 64k
+    tempFile:
+      enabled: true
+      writeSize: 128k
+      maxSize: 10m
+---
+# Player App Body Size Policy - Standard size
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: player-bodysize-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: player-app-route
+  body:
+    # 5MB limit for player interactions
+    maxSize: 5m
+    bufferSize: 32k
+    tempFile:
+      enabled: false
+---
+# Header Size Policy - Applied globally
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: header-size-policy
+  namespace: scavenger-hunt-prod
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: scavenger-hunt-gateway
+  headers:
+    # Maximum header size
+    maxSize: 16k
+    # Number of large header buffers
+    largeClientHeaderBuffers:
+      number: 4
+      size: 8k
