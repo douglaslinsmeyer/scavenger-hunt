@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: scavenger-hunt-prod
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: scavenger-hunt-dev
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: scavenger-hunt-staging

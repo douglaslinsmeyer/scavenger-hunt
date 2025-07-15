@@ -35,6 +35,14 @@ jobs:
           kubectl version --client
           kubectl cluster-info
 
+      - name: Create Namespaces
+        run: |
+          echo "=== Creating namespaces ==="
+          kubectl apply -k kustomize/base/namespaces
+          
+          echo "=== Verifying namespaces ==="
+          kubectl get namespaces | grep scavenger-hunt
+
       - name: Deploy ClusterIssuers
         run: |
           echo "=== Deploying cert-manager ClusterIssuers ==="
