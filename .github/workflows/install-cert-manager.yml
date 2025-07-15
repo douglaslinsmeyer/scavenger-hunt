@@ -1,0 +1,63 @@
+name: Install cert-manager
+
+on:
+  workflow_dispatch:
+
+jobs:
+  install-cert-manager:
+    name: Install cert-manager
+    runs-on: ubuntu-latest
+    environment: Production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          if echo "${{ secrets.KUBE_CONFIG }}" | base64 -d >/dev/null 2>&1; then
+            echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          else
+            echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+          fi
+          chmod 600 $HOME/.kube/config
+          
+          # Verify connection
+          kubectl version --client
+          kubectl cluster-info
+
+      - name: Install cert-manager
+        run: |
+          echo "=== Installing cert-manager v1.15.0 ==="
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.0/cert-manager.yaml
+          
+          echo "=== Waiting for cert-manager namespace ==="
+          kubectl wait --for=condition=Established namespace/cert-manager --timeout=60s || true
+          
+          echo "=== Waiting for cert-manager deployments ==="
+          kubectl wait --for=condition=available --timeout=300s deployment/cert-manager -n cert-manager
+          kubectl wait --for=condition=available --timeout=300s deployment/cert-manager-webhook -n cert-manager
+          kubectl wait --for=condition=available --timeout=300s deployment/cert-manager-cainjector -n cert-manager
+          
+          echo "=== Verifying cert-manager pods ==="
+          kubectl get pods -n cert-manager
+          
+          echo "=== Checking cert-manager CRDs ==="
+          kubectl get crd | grep cert-manager
+
+      - name: Summary
+        run: |
+          echo "=== cert-manager Installation Summary ==="
+          echo
+          echo "✅ cert-manager v1.15.0 installed successfully!"
+          echo
+          echo "=== Next Steps ==="
+          echo "1. Deploy the ClusterIssuers for Let's Encrypt"
+          echo "2. Fix Gateway resource configurations"
+          echo "3. Deploy the application with SSL certificates"

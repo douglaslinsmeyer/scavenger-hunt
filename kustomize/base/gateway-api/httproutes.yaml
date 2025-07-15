@@ -132,8 +132,6 @@ spec:
     - name: player
       port: 80
       weight: 100
-    # Lower priority to act as default
-    priority: 10
 ---
 # HTTPRoute for HTTPS redirect
 apiVersion: gateway.networking.k8s.io/v1

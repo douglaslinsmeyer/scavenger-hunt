@@ -17,32 +17,4 @@ kind: NginxGateway
 metadata:
   name: nginx-gateway-params
   namespace: nginx-gateway
-spec:
-  logging:
-    level: info
-    # Enable access logging in JSON format
-    accessLog:
-      format: json
-      fields:
-        - timestamp
-        - method
-        - uri
-        - protocol
-        - status
-        - responseSize
-        - requestTime
-        - upstreamResponseTime
-        - remoteAddr
-        - xForwardedFor
-        - userAgent
-        - referer
-  telemetry:
-    # Enable Prometheus metrics
-    metrics:
-      enabled: true
-      port: 9113
-    # Enable OpenTelemetry tracing
-    tracing:
-      enabled: true
-      endpoint: "otel-collector.monitoring:4317"
-      serviceName: "scavenger-hunt-gateway"
+spec: {}

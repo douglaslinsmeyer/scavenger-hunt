@@ -59,6 +59,3 @@ spec:
       kinds:
       - group: gateway.networking.k8s.io
         kind: HTTPRoute
-  addresses:
-  - type: IPAddress
-    value: ""  # Will be assigned by LoadBalancer
