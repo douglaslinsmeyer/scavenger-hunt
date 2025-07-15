@@ -9,7 +9,7 @@ metadata:
 spec:
   addresses:
   - type: Hostname
-    value: scavengerhunt.example.com  # Replace with actual production domain
+    value: scavenger-hunt.linsmeyer.com
 ---
 # Update HTTPRoutes with production hostnames
 apiVersion: gateway.networking.k8s.io/v1
@@ -19,8 +19,8 @@ metadata:
   namespace: scavenger-hunt-prod
 spec:
   hostnames:
-  - scavengerhunt.example.com
-  - api.scavengerhunt.example.com
+  - scavenger-hunt.linsmeyer.com
+  - api.scavenger-hunt.linsmeyer.com
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -29,8 +29,8 @@ metadata:
   namespace: scavenger-hunt-prod
 spec:
   hostnames:
-  - scavengerhunt.example.com
-  - admin.scavengerhunt.example.com
+  - scavenger-hunt.linsmeyer.com
+  - admin.scavenger-hunt.linsmeyer.com
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -39,8 +39,8 @@ metadata:
   namespace: scavenger-hunt-prod
 spec:
   hostnames:
-  - scavengerhunt.example.com
-  - play.scavengerhunt.example.com
+  - scavenger-hunt.linsmeyer.com
+  - play.scavenger-hunt.linsmeyer.com
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -49,8 +49,8 @@ metadata:
   namespace: scavenger-hunt-prod
 spec:
   hostnames:
-  - scavengerhunt.example.com
-  - "*.scavengerhunt.example.com"
+  - scavenger-hunt.linsmeyer.com
+  - "*.scavenger-hunt.linsmeyer.com"
 ---
 # Production Certificate
 apiVersion: cert-manager.io/v1
@@ -60,8 +60,8 @@ metadata:
   namespace: scavenger-hunt-prod
 spec:
   dnsNames:
-  - scavengerhunt.example.com
-  - "*.scavengerhunt.example.com"
+  - scavenger-hunt.linsmeyer.com
+  - "*.scavenger-hunt.linsmeyer.com"
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
@@ -104,6 +104,6 @@ spec:
     - name: Strict-Transport-Security
       value: "max-age=63072000; includeSubDomains; preload"
     - name: Content-Security-Policy
-      value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' wss://*.scavengerhunt.example.com"
+      value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' wss://*.scavenger-hunt.linsmeyer.com"
     - name: Permissions-Policy
       value: "geolocation=(self), camera=(self), microphone=()"

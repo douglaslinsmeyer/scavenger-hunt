@@ -13,11 +13,11 @@ spec:
     name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-  - scavenger-hunt.local
-  - "*.scavenger-hunt.local"
-  - api.scavenger-hunt.local
-  - admin.scavenger-hunt.local
-  - play.scavenger-hunt.local
+  - scavenger-hunt.linsmeyer.com
+  - "*.scavenger-hunt.linsmeyer.com"
+  - api.scavenger-hunt.linsmeyer.com
+  - admin.scavenger-hunt.linsmeyer.com
+  - play.scavenger-hunt.linsmeyer.com
   # Certificate renewal
   duration: 2160h # 90 days
   renewBefore: 720h # 30 days before expiry
@@ -30,7 +30,7 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: admin@scavenger-hunt.local
+    email: admin@linsmeyer.com  # Update this to your actual email
     privateKeySecretRef:
       name: letsencrypt-prod-account-key
     solvers:
@@ -46,7 +46,7 @@ metadata:
 spec:
   acme:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: admin@scavenger-hunt.local
+    email: admin@linsmeyer.com  # Update this to your actual email
     privateKeySecretRef:
       name: letsencrypt-staging-account-key
     solvers:
