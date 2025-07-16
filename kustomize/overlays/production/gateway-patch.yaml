@@ -6,9 +6,7 @@ kind: Gateway
 metadata:
   name: scavenger-hunt-gateway
 spec:
-  addresses:
-  - type: Hostname
-    value: scavenger-hunt.linsmeyer.com
+  # Remove addresses field - let the LoadBalancer assign automatically
 ---
 # Update HTTPRoutes with production hostnames
 apiVersion: gateway.networking.k8s.io/v1
