@@ -14,13 +14,8 @@ spec:
   body:
     # 50MB limit for photo uploads
     maxSize: 50m
-    # Buffer size for better performance
-    bufferSize: 128k
-    # Temporary file handling for large uploads
-    tempFile:
-      enabled: true
-      writeSize: 256k
-      maxSize: 50m
+    # Timeout for reading request body
+    timeout: 60s
 ---
 # Admin Dashboard Body Size Policy - Moderate size
 apiVersion: gateway.nginx.org/v1alpha1
@@ -35,11 +30,8 @@ spec:
   body:
     # 10MB limit for admin operations
     maxSize: 10m
-    bufferSize: 64k
-    tempFile:
-      enabled: true
-      writeSize: 128k
-      maxSize: 10m
+    # Timeout for reading request body
+    timeout: 30s
 ---
 # Player App Body Size Policy - Standard size
 apiVersion: gateway.nginx.org/v1alpha1
@@ -54,9 +46,8 @@ spec:
   body:
     # 5MB limit for player interactions
     maxSize: 5m
-    bufferSize: 32k
-    tempFile:
-      enabled: false
+    # Timeout for reading request body
+    timeout: 30s
 ---
 # Header Size Policy - Applied globally
 apiVersion: gateway.nginx.org/v1alpha1
@@ -71,7 +62,3 @@ spec:
   headers:
     # Maximum header size
     maxSize: 16k
-    # Number of large header buffers
-    largeClientHeaderBuffers:
-      number: 4
-      size: 8k

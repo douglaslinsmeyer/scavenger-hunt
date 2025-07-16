@@ -34,8 +34,6 @@ spec:
                     type: string
                   timeout:
                     type: string
-                  tempFile:
-                    type: object
               headers:
                 type: object
                 properties:
@@ -98,8 +96,6 @@ spec:
                       type: string
                   perTryTimeout:
                     type: string
-                  backoff:
-                    type: object
               circuitBreaker:
                 type: object
                 properties:
@@ -241,6 +237,11 @@ spec:
                           type: array
                           items:
                             type: object
+                            properties:
+                              name:
+                                type: string
+                              value:
+                                type: string
   scope: Namespaced
   names:
     plural: observabilitypolicies

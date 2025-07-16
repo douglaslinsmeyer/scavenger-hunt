@@ -74,8 +74,4 @@ spec:
   connectionLimit:
     # Maximum 50 concurrent connections per IP
     connections: 50
-    key: ${remote_addr}
-    zoneSize: 10m
     dryRun: false
-    logLevel: error
-    rejectCode: 503

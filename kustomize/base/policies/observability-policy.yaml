@@ -14,8 +14,6 @@ spec:
   accessLog:
     enabled: true
     format: json
-    destination:
-      type: stdout
     fields:
     - timestamp
     - method
@@ -51,12 +49,6 @@ spec:
     enabled: true
     port: 9113
     path: /metrics
-    # Prometheus format
-    format: prometheus
-    # Custom labels
-    labels:
-      environment: production
-      service: gateway
     # Metrics to collect
     collectors:
     - requests
@@ -80,7 +72,6 @@ spec:
     # OpenTelemetry configuration
     otel:
       endpoint: otel-collector.monitoring:4317
-      protocol: grpc
       serviceName: scavenger-hunt-gateway
       # Sampling rate (10% of requests)
       samplingRate: 0.1
@@ -88,14 +79,6 @@ spec:
       propagation:
       - w3c
       - jaeger
-      # Custom attributes
-      attributes:
-        environment: production
-        version: "1.0.0"
-    # Trace context injection
-    injectHeaders:
-    - traceparent
-    - tracestate
 ---
 # Health Check Policy
 apiVersion: gateway.nginx.org/v1alpha1
@@ -115,21 +98,16 @@ spec:
       timeout: 3s
       passes: 2
       fails: 3
-      path: /health
-      expectedStatus:
-      - 200
-      - 204
     # Gateway health endpoint
-    gateway:
+    status:
       enabled: true
-      port: 8081
       path: /healthz
       # Include subsystem checks
       detailed: true
 ---
 # Error Page Policy
 apiVersion: gateway.nginx.org/v1alpha1
-kind: ClientSettingsPolicy
+kind: ObservabilityPolicy
 metadata:
   name: error-page-policy
 spec:
@@ -140,7 +118,7 @@ spec:
   errorPages:
     # Custom error pages
     - codes: [404]
-      response:
+      return:
         body: |
           {
             "error": "Not Found",
@@ -150,7 +128,7 @@ spec:
         headers:
           Content-Type: application/json
     - codes: [429]
-      response:
+      return:
         body: |
           {
             "error": "Too Many Requests",
@@ -161,7 +139,7 @@ spec:
           Content-Type: application/json
           Retry-After: "60"
     - codes: [500, 502, 503, 504]
-      response:
+      return:
         body: |
           {
             "error": "Internal Server Error",
