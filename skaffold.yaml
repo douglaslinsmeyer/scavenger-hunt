@@ -73,12 +73,6 @@ portForward:
     localPort: 3002
 
 profiles:
-  - name: staging
-    manifests:
-      kustomize:
-        paths:
-          - kustomize/overlays/staging
-
   - name: production
     build:
       tagPolicy:

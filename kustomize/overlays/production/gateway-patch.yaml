@@ -1,6 +1,6 @@
 # Production-specific patches for NGINX Fabric Gateway
 ---
-# Update HTTPRoutes with production hostnames
+# Update HTTPRoutes with production hostnames and proper routing
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -9,6 +9,21 @@ spec:
   hostnames:
   - scavenger-hunt.linsmeyer.com
   - api.scavenger-hunt.linsmeyer.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+    filters:
+    - type: RequestHeaderModifier
+      requestHeaderModifier:
+        add:
+        - name: X-Forwarded-Prefix
+          value: /api
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /socket.io
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -18,6 +33,21 @@ spec:
   hostnames:
   - scavenger-hunt.linsmeyer.com
   - admin.scavenger-hunt.linsmeyer.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /admin
+    filters:
+    - type: RequestHeaderModifier
+      requestHeaderModifier:
+        add:
+        - name: X-Forwarded-Prefix
+          value: /admin
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /admin/_next
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -48,11 +78,44 @@ spec:
     burst: 10     # Reduced from 20
 ---
 # Production observability settings
-apiVersion: gateway.nginx.org/v1alpha1
+apiVersion: gateway.nginx.org/v1alpha2
 kind: ObservabilityPolicy
 metadata:
-  name: tracing-policy
+  name: backend-tracing-policy
 spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: backend-api-route
   tracing:
-    otel:
-      samplingRate: 0.05  # 5% sampling in production (reduced from 10%)
+    strategy: ratio
+    ratio: 5  # 5% sampling in production
+    context: propagate
+---
+apiVersion: gateway.nginx.org/v1alpha2
+kind: ObservabilityPolicy
+metadata:
+  name: admin-tracing-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: admin-dashboard-route
+  tracing:
+    strategy: ratio
+    ratio: 5  # 5% sampling in production
+    context: propagate
+---
+apiVersion: gateway.nginx.org/v1alpha2
+kind: ObservabilityPolicy
+metadata:
+  name: player-tracing-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: player-app-route
+  tracing:
+    strategy: ratio
+    ratio: 5  # 5% sampling in production
+    context: propagate

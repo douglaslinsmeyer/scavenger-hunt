@@ -14,6 +14,9 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+          env:
+            - name: NODE_ENV
+              value: "production"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -31,6 +34,11 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+          env:
+            - name: NODE_ENV
+              value: "production"
+          securityContext:
+            readOnlyRootFilesystem: false  # Next.js needs write access for .next directory
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -48,3 +56,16 @@ spec:
             limits:
               cpu: 200m
               memory: 256Mi
+          env:
+            - name: NODE_ENV
+              value: "production"
+          securityContext:
+            readOnlyRootFilesystem: false  # Next.js needs write access for .next directory
+          livenessProbe:
+            httpGet:
+              path: /admin/health  # Fixed path to include basePath
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /admin/health  # Fixed path to include basePath
+              port: http
