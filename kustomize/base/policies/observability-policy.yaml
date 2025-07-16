@@ -126,7 +126,8 @@ spec:
             "code": 404
           }
         headers:
-          Content-Type: application/json
+        - name: Content-Type
+          value: application/json
     - codes: [429]
       return:
         body: |
@@ -136,8 +137,10 @@ spec:
             "code": 429
           }
         headers:
-          Content-Type: application/json
-          Retry-After: "60"
+        - name: Content-Type
+          value: application/json
+        - name: Retry-After
+          value: "60"
     - codes: [500, 502, 503, 504]
       return:
         body: |
@@ -147,4 +150,5 @@ spec:
             "code": 500
           }
         headers:
-          Content-Type: application/json
+        - name: Content-Type
+          value: application/json
