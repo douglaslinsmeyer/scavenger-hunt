@@ -15,7 +15,7 @@ commonLabels:
 
 patchesStrategicMerge:
   - deployment-patch.yaml
-  - gateway-patch-fixed.yaml
+  - gateway-patch.yaml
   - storage-patch.yaml
 
 configMapGenerator:
