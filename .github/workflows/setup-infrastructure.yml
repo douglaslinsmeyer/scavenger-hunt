@@ -1,0 +1,113 @@
+name: Setup Kubernetes Infrastructure
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  setup-infrastructure:
+    name: Setup Infrastructure Prerequisites
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        environment: [staging, production]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl for ${{ matrix.environment }}
+        env:
+          KUBECONFIG_DATA: ${{ matrix.environment == 'production' && secrets.KUBECONFIG_PROD || secrets.KUBECONFIG_STAGING }}
+        run: |
+          echo "$KUBECONFIG_DATA" | base64 -d > /tmp/kubeconfig
+          export KUBECONFIG=/tmp/kubeconfig
+          kubectl config current-context
+
+      - name: Install Gateway API CRDs
+        run: |
+          echo "Installing Gateway API CRDs..."
+          kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml
+
+      - name: Install NGINX Gateway Fabric
+        run: |
+          echo "Installing NGINX Gateway Fabric CRDs and controller..."
+          
+          # Create namespace if it doesn't exist
+          kubectl create namespace nginx-gateway --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Apply NGINX Gateway Fabric
+          kubectl apply -k kustomize/base/nginx-fabric/
+          
+          # Wait for controller to be ready (with timeout)
+          echo "Waiting for NGINX Gateway Fabric controller..."
+          kubectl wait --for=condition=ready pod -l app=nginx-gateway -n nginx-gateway --timeout=300s || echo "Controller not ready after 5 minutes"
+
+      - name: Install cert-manager
+        run: |
+          echo "Checking cert-manager..."
+          if ! kubectl get namespace cert-manager >/dev/null 2>&1; then
+            echo "Installing cert-manager..."
+            kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+            
+            # Wait for cert-manager
+            kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=cert-manager -n cert-manager --timeout=300s || echo "cert-manager not ready after 5 minutes"
+          else
+            echo "cert-manager already installed"
+          fi
+
+      - name: Create Let's Encrypt issuers
+        run: |
+          echo "Creating cert-manager issuers..."
+          cat <<EOF | kubectl apply -f -
+          apiVersion: cert-manager.io/v1
+          kind: ClusterIssuer
+          metadata:
+            name: letsencrypt-staging
+          spec:
+            acme:
+              server: https://acme-staging-v02.api.letsencrypt.org/directory
+              email: ${{ secrets.LETSENCRYPT_EMAIL || 'admin@example.com' }}
+              privateKeySecretRef:
+                name: letsencrypt-staging
+              solvers:
+              - http01:
+                  ingress:
+                    class: nginx
+          ---
+          apiVersion: cert-manager.io/v1
+          kind: ClusterIssuer
+          metadata:
+            name: letsencrypt-prod
+          spec:
+            acme:
+              server: https://acme-v02.api.letsencrypt.org/directory
+              email: ${{ secrets.LETSENCRYPT_EMAIL || 'admin@example.com' }}
+              privateKeySecretRef:
+                name: letsencrypt-prod
+              solvers:
+              - http01:
+                  ingress:
+                    class: nginx
+          EOF
+
+      - name: Verify installation
+        run: |
+          echo "Verifying installations..."
+          echo "=== CRDs ==="
+          kubectl get crd | grep -E "(gateway|nginx|cert-manager)" || echo "No matching CRDs found"
+          echo ""
+          echo "=== Namespaces ==="
+          kubectl get ns | grep -E "(nginx-gateway|cert-manager)" || echo "No matching namespaces"
+          echo ""
+          echo "=== NGINX Gateway Fabric Pods ==="
+          kubectl get pods -n nginx-gateway || echo "No pods in nginx-gateway namespace"
+          echo ""
+          echo "=== Cert-manager Pods ==="
+          kubectl get pods -n cert-manager || echo "No pods in cert-manager namespace"

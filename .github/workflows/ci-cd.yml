@@ -176,6 +176,36 @@ jobs:
             scavenger-hunt-player=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-player:${{ github.sha }} \
             scavenger-hunt-admin=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-admin:${{ github.sha }}
 
+      - name: Check and install prerequisites
+        run: |
+          echo "Checking for required CRDs..."
+          
+          # Check if NGINX Gateway Fabric CRDs exist
+          if ! kubectl get crd clientsettingspolicies.gateway.nginx.org >/dev/null 2>&1; then
+            echo "NGINX Gateway Fabric CRDs not found. Installing prerequisites..."
+            
+            # Install Gateway API CRDs
+            echo "Installing Gateway API CRDs..."
+            kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml
+            
+            # Create nginx-gateway namespace if it doesn't exist
+            kubectl create namespace nginx-gateway --dry-run=client -o yaml | kubectl apply -f -
+            
+            # Install NGINX Gateway Fabric
+            echo "Installing NGINX Gateway Fabric..."
+            kubectl apply -k ./kustomize/base/nginx-fabric/
+            
+            # Wait a bit for CRDs to be registered
+            echo "Waiting for CRDs to be ready..."
+            sleep 10
+            
+            # Verify CRDs are installed
+            kubectl get crd clientsettingspolicies.gateway.nginx.org
+            kubectl get crd observabilitypolicies.gateway.nginx.org
+          else
+            echo "Prerequisites already installed"
+          fi
+
       - name: Deploy to Kubernetes
         run: |
           echo "Deploying to ${{ matrix.environment }} environment"
