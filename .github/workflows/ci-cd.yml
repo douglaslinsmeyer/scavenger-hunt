@@ -239,6 +239,28 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          # Check if the secret is already base64 encoded or not
+          if echo "${{ secrets.KUBE_CONFIG }}" | base64 -d >/dev/null 2>&1; then
+            echo "Kubeconfig is base64 encoded, decoding..."
+            echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          else
+            echo "Kubeconfig is plain text, using directly..."
+            echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+          fi
+          chmod 600 $HOME/.kube/config
+          
+          # Verify kubectl connection
+          kubectl version --client
+          kubectl cluster-info
+
       - name: Run deployment verification tests
         run: |
           echo "Running deployment verification tests"
