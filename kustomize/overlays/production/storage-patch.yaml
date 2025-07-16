@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: postgres-pvc
 spec:
-  storageClassName: sata
+  storageClassName: ssdv2
   resources:
     requests:
       storage: 10Gi  # Larger size for production
@@ -13,7 +13,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: redis-pvc
 spec:
-  storageClassName: sata
+  storageClassName: ssdv2
   resources:
     requests:
       storage: 5Gi  # Production size
