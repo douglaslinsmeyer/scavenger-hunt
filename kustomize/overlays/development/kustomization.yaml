@@ -10,13 +10,14 @@ resources:
 
 namePrefix: dev-
 
-commonLabels:
-  environment: development
+labels:
+  - pairs:
+      environment: development
 
-patchesStrategicMerge:
-  - deployment-patch.yaml
-  - gateway-patch.yaml
-  - storage-patch.yaml
+patches:
+  - path: deployment-patch.yaml
+  - path: gateway-patch.yaml
+  - path: storage-patch.yaml
 
 configMapGenerator:
   - name: app-config

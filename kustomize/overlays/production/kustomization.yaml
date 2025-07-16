@@ -10,8 +10,9 @@ resources:
   - certificate.yaml
   - security-headers-policy.yaml
 
-commonLabels:
-  environment: production
+labels:
+  - pairs:
+      environment: production
 
 replicas:
   - name: backend
@@ -21,10 +22,10 @@ replicas:
   - name: admin
     count: 1
 
-patchesStrategicMerge:
-  - deployment-patch.yaml
-  - gateway-patch.yaml
-  - storage-patch.yaml
+patches:
+  - path: deployment-patch.yaml
+  - path: gateway-patch.yaml
+  - path: storage-patch.yaml
 
 configMapGenerator:
   - name: app-config
