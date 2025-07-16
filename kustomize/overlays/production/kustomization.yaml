@@ -3,8 +3,11 @@ kind: Kustomization
 
 namespace: scavenger-hunt-prod
 
+resources:
+  - namespace.yaml
+
 bases:
-  - ../../base
+  - ../../base/app
 
 commonLabels:
   environment: production
