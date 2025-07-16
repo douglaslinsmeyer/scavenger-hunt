@@ -32,6 +32,7 @@ labels:
   - pairs:
       app.kubernetes.io/name: scavenger-hunt
       app.kubernetes.io/part-of: scavenger-hunt
+    includeSelectors: false  # Don't modify deployment selectors
 
 images:
   - name: scavenger-hunt-backend

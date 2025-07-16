@@ -13,6 +13,7 @@ resources:
 labels:
   - pairs:
       environment: production
+    includeSelectors: false  # Don't modify deployment selectors
 
 replicas:
   - name: backend
