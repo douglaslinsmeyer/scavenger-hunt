@@ -217,31 +217,6 @@ spec:
                         type: string
                       detailed:
                         type: boolean
-              errorPages:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    codes:
-                      type: array
-                      items:
-                        type: integer
-                    return:
-                      type: object
-                      properties:
-                        code:
-                          type: integer
-                        body:
-                          type: string
-                        headers:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              name:
-                                type: string
-                              value:
-                                type: string
   scope: Namespaced
   names:
     plural: observabilitypolicies
