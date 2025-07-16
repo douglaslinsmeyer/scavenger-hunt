@@ -1,20 +1,29 @@
 # Gateway API SSL Setup with cert-manager
 
-This guide explains how to configure SSL/TLS certificates for applications using Gateway API with cert-manager and NGINX Gateway Fabric.
+This guide explains the SSL/TLS certificate configuration used in the Scavenger Hunt application with Gateway API, cert-manager, and NGINX Gateway Fabric.
+
+## Architecture Overview
+
+The Scavenger Hunt application uses:
+- **Gateway API**: Modern Kubernetes networking standard
+- **NGINX Gateway Fabric**: Gateway API implementation
+- **cert-manager**: Automatic certificate provisioning from Let's Encrypt
+- **Path-based routing**: Single domain with `/api`, `/admin`, `/` paths
 
 ## Prerequisites
 
 - Kubernetes cluster with Gateway API CRDs installed
-- NGINX Gateway Fabric v2.0.2+ deployed
+- NGINX Gateway Fabric deployed (gatewayclass: nginx)
 - cert-manager v1.15.0+ installed
-- DNS records pointing to your Gateway's external IP
+- DNS A record pointing to Gateway's LoadBalancer IP
 
-## Configuration Steps
+## Implementation Details
 
-### 1. Create Gateway API-Compatible ClusterIssuer
+### 1. ClusterIssuers Configuration
 
-Create a ClusterIssuer that uses `gatewayHTTPRoute` solver for HTTP-01 challenges:
+The application defines two ClusterIssuers for Let's Encrypt integration:
 
+**Production Issuer** (`kustomize/base/cert-manager/clusterissuer-prod.yaml`):
 ```yaml
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -23,7 +32,7 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: your-email@example.com
+    email: doug@linsmeyer.com
     privateKeySecretRef:
       name: letsencrypt-prod-account-key
     solvers:
@@ -36,17 +45,38 @@ spec:
             group: gateway.networking.k8s.io
 ```
 
-### 2. Configure Gateway with TLS
+**Staging Issuer** (for testing to avoid rate limits):
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging-gateway
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: doug@linsmeyer.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+    - http01:
+        gatewayHTTPRoute:
+          parentRefs:
+          - name: scavenger-hunt-gateway
+            namespace: scavenger-hunt-prod
+            kind: Gateway
+            group: gateway.networking.k8s.io
+```
 
-Ensure your Gateway has both HTTP and HTTPS listeners:
+### 2. Gateway Configuration
 
+The Gateway is configured with three listeners and cert-manager integration:
+
+**Base Gateway** (`kustomize/base/gateway-api/gateway.yaml`):
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: scavenger-hunt-gateway
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod-gateway
 spec:
   gatewayClassName: nginx
   listeners:
@@ -67,107 +97,200 @@ spec:
     allowedRoutes:
       namespaces:
         from: Same
+  - name: health
+    protocol: HTTP
+    port: 8080
+    allowedRoutes:
+      namespaces:
+        from: Same
 ```
 
-### 3. Create Certificate Resource
+**Production Patch** (`kustomize/overlays/production/gateway-cert-patch.yaml`):
+```yaml
+- op: add
+  path: /metadata/annotations
+  value:
+    cert-manager.io/cluster-issuer: letsencrypt-prod-gateway
+```
 
-Define a Certificate resource for your domains:
+This annotation triggers cert-manager to provision certificates for the Gateway.
 
+### 3. Certificate Resource
+
+The Certificate resource specifies the domain and issuer:
+
+**Production Certificate** (`kustomize/overlays/production/certificate.yaml`):
 ```yaml
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: scavenger-hunt-tls
+  namespace: scavenger-hunt-prod
 spec:
   secretName: scavenger-hunt-tls
   dnsNames:
-  - admin.scavenger-hunt.linsmeyer.com
-  - api.scavenger-hunt.linsmeyer.com
-  - play.scavenger-hunt.linsmeyer.com
+  - scavenger-hunt.linsmeyer.com
   issuerRef:
     name: letsencrypt-prod-gateway
     kind: ClusterIssuer
 ```
 
-### 4. Apply Configuration
+Note: Only a single domain is needed as the application uses path-based routing.
 
-```bash
-# Apply the ClusterIssuer
-kubectl apply -f gateway-api-issuer.yaml
+### 4. HTTPRoute Configuration
 
-# Apply your production configuration
-kubectl apply -k kustomize/overlays/production
+The application includes an HTTPS redirect route that preserves ACME challenges:
+
+**HTTPS Redirect** (`kustomize/base/gateway-api/httproutes.yaml`):
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: https-redirect
+spec:
+  parentRefs:
+  - name: scavenger-hunt-gateway
+    sectionName: http
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /.well-known/acme-challenge/
+    backendRefs:
+    - name: cm-acme-http-solver-xxxxx  # Dynamically created by cert-manager
+      port: 8089
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        statusCode: 301
 ```
+
+This configuration:
+- Allows ACME HTTP-01 challenges to pass through on HTTP
+- Redirects all other HTTP traffic to HTTPS
 
 ## How It Works
 
-1. **Certificate Request**: When you create a Certificate resource, cert-manager initiates the ACME challenge process
-2. **HTTPRoute Creation**: cert-manager automatically creates temporary HTTPRoute resources for each domain
-3. **Challenge Validation**: Let's Encrypt validates domain ownership via HTTP-01 challenges at `/.well-known/acme-challenge/`
-4. **Certificate Issuance**: Once validated, cert-manager stores the certificate in the specified Secret
-5. **Gateway Usage**: The Gateway uses the certificate Secret for TLS termination
+1. **Certificate Request**: The Certificate resource triggers cert-manager to request a certificate from Let's Encrypt
+2. **ACME Challenge Setup**: cert-manager creates:
+   - A temporary HTTPRoute for the ACME challenge path
+   - A temporary Service and Pod to respond to challenges
+3. **Challenge Routing**: 
+   - Let's Encrypt sends HTTP-01 challenge to `http://scavenger-hunt.linsmeyer.com/.well-known/acme-challenge/<token>`
+   - Gateway routes this to cert-manager's solver pod
+   - Other HTTP traffic is redirected to HTTPS
+4. **Certificate Issuance**: After successful validation, cert-manager:
+   - Receives the certificate from Let's Encrypt
+   - Stores it in the `scavenger-hunt-tls` Secret
+   - Cleans up temporary resources
+5. **Gateway TLS**: The Gateway's HTTPS listener uses the certificate for TLS termination
 
-## Verification
+## Deployment Process
 
-Check certificate status:
 ```bash
-kubectl get certificate -n scavenger-hunt-prod
-```
+# 1. Deploy everything with a single command
+kubectl apply -k kustomize/overlays/production
 
-Check challenge progress:
-```bash
+# 2. Monitor certificate provisioning
+kubectl get certificate -n scavenger-hunt-prod -w
+
+# 3. Check for any issues
+kubectl describe certificate scavenger-hunt-tls -n scavenger-hunt-prod
 kubectl get challenges -n scavenger-hunt-prod
-```
-
-View HTTPRoutes created by cert-manager:
-```bash
-kubectl get httproute -n scavenger-hunt-prod | grep solver
 ```
 
 ## Troubleshooting
 
-### Certificate Stuck in Pending
+### Certificate Issues
 
-1. Check challenge status:
+1. **Check certificate status**:
    ```bash
-   kubectl describe challenge <challenge-name> -n scavenger-hunt-prod
+   kubectl get certificate -n scavenger-hunt-prod
+   kubectl describe certificate scavenger-hunt-tls -n scavenger-hunt-prod
    ```
 
-2. Verify DNS resolution:
+2. **View active challenges**:
    ```bash
-   nslookup your-domain.com
+   kubectl get challenges -n scavenger-hunt-prod
+   kubectl describe challenge -n scavenger-hunt-prod
    ```
 
-3. Test HTTP accessibility:
+3. **Check cert-manager solver pods**:
    ```bash
-   curl -v http://your-domain.com/.well-known/acme-challenge/test
+   kubectl get pods -n scavenger-hunt-prod | grep cm-acme-http-solver
+   kubectl logs -n scavenger-hunt-prod <solver-pod-name>
    ```
 
-### Common Issues
+4. **Verify ACME challenge routing**:
+   ```bash
+   # Test from outside the cluster
+   curl -v http://scavenger-hunt.linsmeyer.com/.well-known/acme-challenge/test
+   ```
 
-- **500 Errors on Base Domain**: If using path-based routing, the base domain might conflict with ACME challenges. Consider using subdomain-only certificates.
-- **Wrong Namespace**: Ensure certificates are created in the same namespace as your Gateway
-- **DNS Propagation**: Allow time for DNS records to propagate before requesting certificates
-- **Rate Limits**: Let's Encrypt has rate limits. Use staging issuer for testing.
+### Common Issues and Solutions
 
-## Production Considerations
+1. **Challenge not reachable**:
+   - Verify DNS points to correct LoadBalancer IP
+   - Check that port 80 is open and accessible
+   - Ensure HTTPS redirect excludes ACME challenge path
 
-1. **Wildcard Certificates**: Require DNS-01 validation, which needs DNS provider integration
-2. **Certificate Renewal**: cert-manager automatically renews certificates 30 days before expiry
-3. **Monitoring**: Set up alerts for certificate expiration and failed renewals
-4. **Backup**: Regularly backup the certificate Secrets
+2. **Wrong namespace**:
+   - Certificate must be in same namespace as Gateway
+   - ClusterIssuer parentRef must specify correct namespace
 
-## NGINX Gateway Fabric Specifics
+3. **Rate limit errors**:
+   - Switch to staging issuer for testing
+   - Let's Encrypt allows 50 certificates per week per domain
 
-NGINX Gateway Fabric v2.0.2 has limited ClientSettingsPolicy support:
-- Only `body`, `keepAlive`, and `targetRef` fields are supported
-- Rate limiting, custom headers, and timeouts must be configured differently
-- Consider using NGINX annotations or ConfigMaps for advanced configurations
+4. **Gateway not picking up certificate**:
+   - Verify cert-manager annotation on Gateway
+   - Check that certificateRef in Gateway matches Secret name
 
-## Migration from Ingress
+## Production Best Practices
 
-If migrating from Ingress-based cert-manager:
-1. Create new Gateway API-based ClusterIssuers
-2. Update Certificate resources to use new issuers
-3. Delete old Ingress-based challenges and certificates
-4. Update application routing to use HTTPRoutes instead of Ingresses
+### Certificate Management
+
+1. **Automatic Renewal**: cert-manager renews certificates 30 days before expiry
+2. **Monitoring**: 
+   ```bash
+   # Check certificate expiration
+   kubectl get certificate -n scavenger-hunt-prod -o jsonpath='{.items[*].status.renewalTime}'
+   ```
+3. **Backup**: Backup certificate secrets regularly:
+   ```bash
+   kubectl get secret scavenger-hunt-tls -n scavenger-hunt-prod -o yaml > tls-backup.yaml
+   ```
+
+### Testing with Staging Certificates
+
+To avoid Let's Encrypt rate limits during testing:
+
+```bash
+# 1. Edit certificate to use staging issuer
+kubectl patch certificate scavenger-hunt-tls -n scavenger-hunt-prod \
+  --type='json' -p='[{"op": "replace", "path": "/spec/issuerRef/name", "value": "letsencrypt-staging-gateway"}]'
+
+# 2. Delete existing certificate to force renewal
+kubectl delete secret scavenger-hunt-tls -n scavenger-hunt-prod
+
+# 3. Once testing is complete, switch back to production
+kubectl patch certificate scavenger-hunt-tls -n scavenger-hunt-prod \
+  --type='json' -p='[{"op": "replace", "path": "/spec/issuerRef/name", "value": "letsencrypt-prod-gateway"}]'
+```
+
+## Key Implementation Features
+
+1. **Single Domain Architecture**: Uses path-based routing instead of subdomains
+2. **Gateway API Native**: Leverages modern Kubernetes networking standards
+3. **Automatic HTTPS Redirect**: All HTTP traffic redirected except ACME challenges
+4. **Zero-Downtime Updates**: Certificate renewals happen without service interruption
+5. **Environment Separation**: Different configurations for dev/staging/prod
+
+## Summary
+
+The Scavenger Hunt application demonstrates a production-ready Gateway API implementation with:
+- Automatic SSL certificate provisioning via cert-manager
+- Proper ACME challenge routing with HTTPS redirect
+- Path-based routing for multiple services on a single domain
+- Clean separation of concerns using Kustomize overlays

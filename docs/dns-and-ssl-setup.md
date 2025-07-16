@@ -2,13 +2,21 @@
 
 ## Overview
 
-This guide covers setting up DNS records and SSL certificates for the Scavenger Hunt application at `scavenger-hunt.linsmeyer.com`.
+This guide covers setting up DNS records and SSL certificates for the Scavenger Hunt application at `scavenger-hunt.linsmeyer.com` using Gateway API with NGINX Gateway Fabric and cert-manager.
+
+## Architecture
+
+The Scavenger Hunt application uses:
+- **Gateway API**: Modern Kubernetes networking with NGINX Gateway Fabric
+- **cert-manager**: Automatic SSL certificate provisioning from Let's Encrypt
+- **Single domain**: All services (API, Admin, Player) served from `scavenger-hunt.linsmeyer.com`
 
 ## Prerequisites
 
-1. Access to your DNS provider (to create A/CNAME records)
-2. Kubernetes cluster with NGINX Fabric Gateway or Ingress Controller
-3. cert-manager installed in your cluster
+1. Access to your DNS provider (to create A records)
+2. Kubernetes cluster with Gateway API CRDs installed
+3. NGINX Gateway Fabric installed (gatewayclass: nginx)
+4. cert-manager v1.15.0+ installed in your cluster
 
 ## Step 1: Install cert-manager
 
@@ -25,53 +33,29 @@ kubectl wait --for=condition=Ready pods -l app.kubernetes.io/instance=cert-manag
 kubectl get pods -n cert-manager
 ```
 
-## Step 2: Deploy NGINX Gateway or Get LoadBalancer IP
-
-### Option A: If using NGINX Fabric Gateway
+## Step 2: Install NGINX Gateway Fabric
 
 ```bash
-# Deploy NGINX Fabric Gateway
-kubectl apply -k kustomize/base/nginx-fabric
+# Install NGINX Gateway Fabric (if not already installed)
+kubectl apply -f https://github.com/nginxinc/nginx-gateway-fabric/releases/download/v1.2.0/crds.yaml
+kubectl apply -f https://github.com/nginxinc/nginx-gateway-fabric/releases/download/v1.2.0/nginx-gateway.yaml
 
-# Wait for LoadBalancer to get external IP
-kubectl get svc nginx-gateway -n nginx-gateway -w
-```
-
-### Option B: If using traditional NGINX Ingress Controller
-
-```bash
-# Install NGINX Ingress Controller
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.0/deploy/static/provider/cloud/deploy.yaml
+# Wait for controller to be ready
+kubectl wait --for=condition=Available deployment/nginx-gateway -n nginx-gateway --timeout=60s
 
 # Get the LoadBalancer IP
-kubectl get svc ingress-nginx-controller -n ingress-nginx
-```
-
-### Option C: Check existing services
-
-```bash
-# Check all LoadBalancer services
-kubectl get svc --all-namespaces | grep LoadBalancer
+kubectl get svc nginx-gateway -n nginx-gateway
 ```
 
 ## Step 3: Configure DNS Records
 
-Once you have the LoadBalancer IP address, configure these DNS records:
+Once you have the LoadBalancer IP address, configure your DNS record:
 
-### Required DNS Records
+### Required DNS Record
 
 | Record Type | Name | Value | TTL | Purpose |
 |------------|------|-------|-----|---------|
 | A | scavenger-hunt.linsmeyer.com | `<LOADBALANCER_IP>` | 300 | Main domain |
-| A | *.scavenger-hunt.linsmeyer.com | `<LOADBALANCER_IP>` | 300 | Wildcard for subdomains |
-
-### Optional subdomain records (if not using wildcard)
-
-| Record Type | Name | Value | TTL | Purpose |
-|------------|------|-------|-----|---------|
-| A | api.scavenger-hunt.linsmeyer.com | `<LOADBALANCER_IP>` | 300 | API endpoint |
-| A | admin.scavenger-hunt.linsmeyer.com | `<LOADBALANCER_IP>` | 300 | Admin dashboard |
-| A | play.scavenger-hunt.linsmeyer.com | `<LOADBALANCER_IP>` | 300 | Player app |
 
 ### Example DNS Configuration
 
@@ -79,53 +63,65 @@ If your LoadBalancer IP is `34.123.45.67`:
 
 ```
 scavenger-hunt.linsmeyer.com     A    34.123.45.67    300
-*.scavenger-hunt.linsmeyer.com   A    34.123.45.67    300
 ```
 
-## Step 4: Deploy Certificate Issuers
+**Note**: A single A record is sufficient. The application uses path-based routing (`/api`, `/admin`, `/`) rather than subdomain routing.
+
+## Step 4: Deploy the Application
+
+The production overlay includes all necessary SSL/TLS configurations:
 
 ```bash
-# Apply the cert-manager configuration
-kubectl apply -k kustomize/base/cert-manager
-
-# Verify ClusterIssuers are created
-kubectl get clusterissuer
-```
-
-## Step 5: Deploy the Application with SSL
-
-```bash
-# Deploy to production with SSL enabled
+# Deploy to production (includes Gateway, HTTPRoutes, Certificate, and services)
 kubectl apply -k kustomize/overlays/production
 
+# Verify namespace creation
+kubectl get ns scavenger-hunt-prod
+
+# Check Gateway status
+kubectl get gateway -n scavenger-hunt-prod
+kubectl describe gateway scavenger-hunt-gateway -n scavenger-hunt-prod
+```
+
+## Step 5: Verify Certificate Provisioning
+
+cert-manager will automatically provision the SSL certificate using Let's Encrypt:
+
+```bash
 # Check certificate status
 kubectl get certificate -n scavenger-hunt-prod
+# Should show READY=True when certificate is issued
+
+# Watch certificate provisioning progress
+kubectl get certificate scavenger-hunt-tls -n scavenger-hunt-prod -w
+
+# Check for ACME challenges
+kubectl get challenges -n scavenger-hunt-prod
+
+# View certificate details
 kubectl describe certificate scavenger-hunt-tls -n scavenger-hunt-prod
 ```
 
-## Step 6: Verify SSL Certificate
+## Step 6: Test SSL Configuration
 
-### Check certificate issuance progress
+### Verify HTTPS is working
 
 ```bash
-# Watch certificate status
-kubectl get certificate -n scavenger-hunt-prod -w
+# Test HTTPS endpoints
+curl -v https://scavenger-hunt.linsmeyer.com/           # Player app
+curl -v https://scavenger-hunt.linsmeyer.com/api/health # Backend API
+curl -v https://scavenger-hunt.linsmeyer.com/admin/health # Admin dashboard
 
-# Check cert-manager logs if issues
-kubectl logs -n cert-manager deployment/cert-manager
-
-# Check certificate details
-kubectl describe certificate scavenger-hunt-tls -n scavenger-hunt-prod
+# Test HTTP to HTTPS redirect
+curl -v -L http://scavenger-hunt.linsmeyer.com
+# Should redirect to HTTPS with 301 status
 ```
 
-### Test with curl
+### Verify certificate details
 
 ```bash
-# Test HTTPS endpoint
-curl -v https://scavenger-hunt.linsmeyer.com
-
-# Test redirect from HTTP to HTTPS
-curl -v http://scavenger-hunt.linsmeyer.com
+# Check certificate information
+openssl s_client -connect scavenger-hunt.linsmeyer.com:443 -servername scavenger-hunt.linsmeyer.com < /dev/null | openssl x509 -noout -text | grep -E "(Subject:|DNS:)"
 ```
 
 ## Troubleshooting
@@ -138,10 +134,16 @@ curl -v http://scavenger-hunt.linsmeyer.com
    dig scavenger-hunt.linsmeyer.com
    ```
 
-2. **Check HTTP-01 challenge**
+2. **Check ACME HTTP-01 challenge**
    ```bash
-   # Check if cert-manager can reach your domain
+   # View active challenges
+   kubectl get challenges -n scavenger-hunt-prod
+   
+   # Check challenge details
    kubectl describe challenge -n scavenger-hunt-prod
+   
+   # Verify ACME challenge path is accessible
+   curl -v http://scavenger-hunt.linsmeyer.com/.well-known/acme-challenge/test
    ```
 
 3. **Check cert-manager logs**
@@ -150,68 +152,75 @@ curl -v http://scavenger-hunt.linsmeyer.com
    kubectl logs -n cert-manager deployment/cert-manager-webhook
    ```
 
+4. **Verify Gateway configuration**
+   ```bash
+   # Check Gateway has cert-manager annotation
+   kubectl get gateway scavenger-hunt-gateway -n scavenger-hunt-prod -o yaml | grep cert-manager
+   
+   # Check HTTPRoutes are properly configured
+   kubectl get httproute -n scavenger-hunt-prod
+   ```
+
 ### Common Issues
 
-1. **Rate Limits**: Let's Encrypt has rate limits. Use staging issuer for testing:
-   ```yaml
-   issuerRef:
-     name: letsencrypt-staging
-     kind: ClusterIssuer
+1. **Rate Limits**: Let's Encrypt has rate limits (50 certificates per week per domain). Use staging issuer for testing:
+   ```bash
+   # Edit the certificate to use staging issuer
+   kubectl edit certificate scavenger-hunt-tls -n scavenger-hunt-prod
+   # Change issuerRef.name to: letsencrypt-staging-gateway
    ```
 
 2. **DNS not propagated**: Wait 5-10 minutes after creating DNS records
 
-3. **Firewall blocking port 80**: HTTP-01 challenge requires port 80 to be accessible
+3. **ACME challenge blocked**: Ensure the HTTPS redirect HTTPRoute excludes `/.well-known/acme-challenge/`
 
-4. **Wrong email**: Update email in ClusterIssuer configuration
+4. **Wrong namespace**: Certificates must be in the same namespace as the Gateway
 
-## Alternative: DNS-01 Challenge
+5. **Gateway not ready**: Ensure Gateway shows `Ready` status before certificate provisioning
 
-If HTTP-01 challenges don't work (e.g., behind firewall), use DNS-01:
+## Certificate Management
 
-1. Configure your DNS provider credentials
-2. Update ClusterIssuer to use DNS-01 solver
-3. See cert-manager docs for your specific DNS provider
+### Manual certificate renewal (if needed)
 
-## Monitoring
-
-### Set up certificate expiry alerts
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cert-expiry-alert
-  namespace: cert-manager
-data:
-  alert.yaml: |
-    groups:
-    - name: certificates
-      rules:
-      - alert: CertificateExpiringSoon
-        expr: certmanager_certificate_expiration_timestamp_seconds - time() < 7 * 24 * 3600
-        for: 1h
-        labels:
-          severity: warning
-        annotations:
-          summary: "Certificate expiring soon"
-          description: "Certificate {{ $labels.name }} in namespace {{ $labels.namespace }} expires in less than 7 days"
+```bash
+# Delete the certificate to trigger renewal
+kubectl delete certificate scavenger-hunt-tls -n scavenger-hunt-prod
+# It will be recreated automatically by cert-manager
 ```
 
-## Next Steps
+### Switch between staging and production
 
-1. Update the email address in the cert-manager configuration to receive expiry notifications
-2. Set up monitoring for certificate expiration
-3. Configure backup DNS records for high availability
-4. Consider using Cloudflare or another CDN for additional security and performance
+```bash
+# For testing (to avoid rate limits)
+kubectl patch certificate scavenger-hunt-tls -n scavenger-hunt-prod --type='json' \
+  -p='[{"op": "replace", "path": "/spec/issuerRef/name", "value": "letsencrypt-staging-gateway"}]'
 
-## Summary
+# For production
+kubectl patch certificate scavenger-hunt-tls -n scavenger-hunt-prod --type='json' \
+  -p='[{"op": "replace", "path": "/spec/issuerRef/name", "value": "letsencrypt-prod-gateway"}]'
+```
 
-After completing these steps, your Scavenger Hunt application will be accessible at:
+## Monitoring Certificate Status
 
-- Main app: https://scavenger-hunt.linsmeyer.com
-- API: https://scavenger-hunt.linsmeyer.com/api
-- Admin: https://scavenger-hunt.linsmeyer.com/admin
-- Player: https://scavenger-hunt.linsmeyer.com (or play.scavenger-hunt.linsmeyer.com)
+```bash
+# Check certificate expiration
+kubectl get certificate -n scavenger-hunt-prod -o wide
 
-All traffic will be automatically encrypted with Let's Encrypt SSL certificates that auto-renew every 60-90 days.
+# View certificate secret
+kubectl get secret scavenger-hunt-tls -n scavenger-hunt-prod -o yaml | \
+  grep tls.crt | cut -d' ' -f4 | base64 -d | \
+  openssl x509 -noout -dates
+```
+
+## Application Routes
+
+After successful setup, your application will be accessible at:
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Player App | https://scavenger-hunt.linsmeyer.com/ | Main player interface |
+| Admin Dashboard | https://scavenger-hunt.linsmeyer.com/admin | Hunt administration |
+| Backend API | https://scavenger-hunt.linsmeyer.com/api | REST API endpoints |
+| WebSocket | https://scavenger-hunt.linsmeyer.com/socket.io | Real-time updates |
+
+All HTTP traffic is automatically redirected to HTTPS, and certificates are renewed automatically by cert-manager before expiration.
