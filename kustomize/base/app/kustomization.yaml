@@ -4,12 +4,12 @@ kind: Kustomization
 namespace: scavenger-hunt
 
 resources:
-  - ../backend-deployment.yaml
-  - ../backend-service.yaml
-  - ../player-deployment.yaml
-  - ../player-service.yaml
-  - ../admin-deployment.yaml
-  - ../admin-service.yaml
+  - backend-deployment.yaml
+  - backend-service.yaml
+  - player-deployment.yaml
+  - player-service.yaml
+  - admin-deployment.yaml
+  - admin-service.yaml
 
 commonLabels:
   app.kubernetes.io/name: scavenger-hunt
