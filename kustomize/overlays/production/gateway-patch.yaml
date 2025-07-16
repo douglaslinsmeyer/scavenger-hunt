@@ -1,13 +1,5 @@
 # Production-specific patches for NGINX Fabric Gateway
 ---
-# Update Gateway with production domain
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: scavenger-hunt-gateway
-spec:
-  # Remove addresses field - let the LoadBalancer assign automatically
----
 # Update HTTPRoutes with production hostnames
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
