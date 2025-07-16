@@ -10,10 +10,8 @@ resources:
   - certificate.yaml
   - security-headers-policy.yaml
 
-labels:
-  - pairs:
-      environment: production
-    includeSelectors: false  # Don't modify deployment selectors
+# Labels removed to avoid selector immutability issues
+# Production environment label will be added via deployment patches if needed
 
 replicas:
   - name: backend

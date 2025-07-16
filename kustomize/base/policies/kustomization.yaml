@@ -5,4 +5,4 @@ resources:
   - ratelimit-policy.yaml
   - timeout-policy.yaml
   - clientbodysize-policy.yaml
-  - observability-policy.yaml
+  # - observability-policy.yaml  # Removed due to missing v1alpha2 CRDs in production
