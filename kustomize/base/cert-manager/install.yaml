@@ -1,49 +1,8 @@
-# Cert-Manager Installation and Configuration
-# This file installs cert-manager v1.15.0 for automatic SSL certificate management
+# Cert-Manager Namespace
+# Note: cert-manager itself should be installed cluster-wide using:
+# kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.0/cert-manager.yaml
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
   name: cert-manager
----
-# Apply the cert-manager CRDs and resources
-# Note: In production, you should download and verify this manifest
-# kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.0/cert-manager.yaml
-#
-# For now, we'll include the essential components:
-
-# ClusterIssuer for Let's Encrypt Production
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-prod
-spec:
-  acme:
-    # Production Let's Encrypt server
-    server: https://acme-v02.api.letsencrypt.org/directory
-    email: doug@linsmeyer.com  # Update this to receive certificate expiry notifications
-    # Store the private key in this secret
-    privateKeySecretRef:
-      name: letsencrypt-prod-private-key
-    # HTTP-01 challenge solver
-    solvers:
-    - http01:
-        ingress:
-          ingressClassName: nginx
----
-# ClusterIssuer for Let's Encrypt Staging (for testing)
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-staging
-spec:
-  acme:
-    # Staging server for testing (doesn't have rate limits)
-    server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: doug@linsmeyer.com
-    privateKeySecretRef:
-      name: letsencrypt-staging-private-key
-    solvers:
-    - http01:
-        ingress:
-          ingressClassName: nginx

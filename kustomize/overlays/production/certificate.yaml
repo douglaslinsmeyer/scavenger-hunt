@@ -7,9 +7,6 @@ spec:
   secretName: scavenger-hunt-tls
   dnsNames:
   - scavenger-hunt.linsmeyer.com
-  - admin.scavenger-hunt.linsmeyer.com
-  - api.scavenger-hunt.linsmeyer.com
-  - play.scavenger-hunt.linsmeyer.com
   issuerRef:
     name: letsencrypt-prod-gateway
     kind: ClusterIssuer

@@ -7,7 +7,7 @@ resources:
   - ../../base
   - ../../base/gateway-api
   - ../../base/policies
-  - certificate-subdomains.yaml
+  - certificate.yaml
 
 # Labels removed to avoid selector immutability issues
 # Production environment label will be added via deployment patches if needed

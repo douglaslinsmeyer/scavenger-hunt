@@ -7,8 +7,3 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: scavenger-hunt-dev
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: scavenger-hunt-staging
