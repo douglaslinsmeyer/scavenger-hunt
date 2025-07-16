@@ -184,24 +184,27 @@ jobs:
           if ! kubectl get crd clientsettingspolicies.gateway.nginx.org >/dev/null 2>&1; then
             echo "NGINX Gateway Fabric CRDs not found. Installing prerequisites..."
             
-            # Install Gateway API CRDs
-            echo "Installing Gateway API CRDs..."
-            kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml
-            
             # Create nginx-gateway namespace if it doesn't exist
             kubectl create namespace nginx-gateway --dry-run=client -o yaml | kubectl apply -f -
             
-            # Install NGINX Gateway Fabric
-            echo "Installing NGINX Gateway Fabric..."
-            kubectl apply -k ./kustomize/base/nginx-fabric/
+            # Install Gateway API CRDs for v2.0.2
+            echo "Installing Gateway API CRDs..."
+            kubectl kustomize "https://github.com/nginx/nginx-gateway-fabric/config/crd/gateway-api/standard?ref=v2.0.2" | kubectl apply -f -
             
-            # Wait a bit for CRDs to be registered
+            # Install NGINX Gateway Fabric CRDs
+            echo "Installing NGINX Gateway Fabric CRDs..."
+            kubectl apply --server-side -f https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.0.2/deploy/crds.yaml
+            
+            # Install NGINX Gateway Fabric v2.0.2
+            echo "Installing NGINX Gateway Fabric v2.0.2..."
+            kubectl apply -f https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.0.2/deploy/default/deploy.yaml
+            
+            # Wait for CRDs to be registered
             echo "Waiting for CRDs to be ready..."
-            sleep 10
+            sleep 15
             
             # Verify CRDs are installed
             kubectl get crd clientsettingspolicies.gateway.nginx.org
-            kubectl get crd observabilitypolicies.gateway.nginx.org
           else
             echo "Prerequisites already installed"
           fi

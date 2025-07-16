@@ -1,5 +1,6 @@
 # Client Body Size Policy for NGINX Gateway Fabric
 # Configures maximum request body sizes for different routes
+# NOTE: NGINX Gateway Fabric v2.0.2 only supports body, keepAlive, and targetRef fields
 ---
 # API Body Size Policy - Large for photo uploads
 apiVersion: gateway.nginx.org/v1alpha1
@@ -14,8 +15,6 @@ spec:
   body:
     # 50MB limit for photo uploads
     maxSize: 50m
-    # Timeout for reading request body
-    timeout: 60s
 ---
 # Admin Dashboard Body Size Policy - Moderate size
 apiVersion: gateway.nginx.org/v1alpha1
@@ -30,8 +29,6 @@ spec:
   body:
     # 10MB limit for admin operations
     maxSize: 10m
-    # Timeout for reading request body
-    timeout: 30s
 ---
 # Player App Body Size Policy - Standard size
 apiVersion: gateway.nginx.org/v1alpha1
@@ -46,19 +43,3 @@ spec:
   body:
     # 5MB limit for player interactions
     maxSize: 5m
-    # Timeout for reading request body
-    timeout: 30s
----
-# Header Size Policy - Applied globally
-apiVersion: gateway.nginx.org/v1alpha1
-kind: ClientSettingsPolicy
-metadata:
-  name: header-size-policy
-spec:
-  targetRef:
-    group: gateway.networking.k8s.io
-    kind: Gateway
-    name: scavenger-hunt-gateway
-  headers:
-    # Maximum header size
-    maxSize: 16k

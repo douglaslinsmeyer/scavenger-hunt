@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - ratelimit-policy.yaml
-  - timeout-policy.yaml
-  - clientbodysize-policy.yaml
+  # - ratelimit-policy.yaml  # Removed - NGINX Gateway Fabric v2.0.2 doesn't support rateLimit field
+  # - timeout-policy.yaml    # Removed - NGINX Gateway Fabric v2.0.2 doesn't support timeouts/retries/circuitBreaker fields
+  - clientbodysize-policy.yaml  # Only body, keepAlive, and targetRef fields are supported
   # - observability-policy.yaml  # Removed due to missing v1alpha2 CRDs in production

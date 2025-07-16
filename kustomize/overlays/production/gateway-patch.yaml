@@ -8,12 +8,14 @@ metadata:
 spec:
   hostnames:
   - scavenger-hunt.linsmeyer.com
-  - api.scavenger-hunt.linsmeyer.com
   rules:
   - matches:
     - path:
         type: PathPrefix
         value: /api
+    backendRefs:
+    - name: backend
+      port: 80
     filters:
     - type: RequestHeaderModifier
       requestHeaderModifier:
@@ -24,6 +26,9 @@ spec:
     - path:
         type: PathPrefix
         value: /socket.io
+    backendRefs:
+    - name: backend
+      port: 80
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -32,22 +37,14 @@ metadata:
 spec:
   hostnames:
   - scavenger-hunt.linsmeyer.com
-  - admin.scavenger-hunt.linsmeyer.com
   rules:
   - matches:
     - path:
         type: PathPrefix
         value: /admin
-    filters:
-    - type: RequestHeaderModifier
-      requestHeaderModifier:
-        add:
-        - name: X-Forwarded-Prefix
-          value: /admin
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /admin/_next
+    backendRefs:
+    - name: admin
+      port: 80
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -56,7 +53,6 @@ metadata:
 spec:
   hostnames:
   - scavenger-hunt.linsmeyer.com
-  - play.scavenger-hunt.linsmeyer.com
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -65,17 +61,26 @@ metadata:
 spec:
   hostnames:
   - scavenger-hunt.linsmeyer.com
-  - "*.scavenger-hunt.linsmeyer.com"
+  rules:
+  # Exclude ACME challenges from HTTPS redirect
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /.well-known/acme-challenge/
+    # No filters - let it pass through to other routes
+  # Redirect everything else to HTTPS
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        statusCode: 301
 ---
-# Stricter rate limits for production
-apiVersion: gateway.nginx.org/v1alpha1
-kind: ClientSettingsPolicy
-metadata:
-  name: api-ratelimit-policy
-spec:
-  rateLimit:
-    requests: 60  # Reduced from 100 for production
-    burst: 10     # Reduced from 20
 # Production observability settings
 # NOTE: ObservabilityPolicy v1alpha2 CRDs not available in production cluster
 # Tracing is disabled until CRDs are installed
+# NOTE: ClientSettingsPolicy in NGINX Gateway Fabric v2.0.2 only supports body, keepAlive, and targetRef fields
+# Rate limiting, headers, timeouts, and retries must be configured differently

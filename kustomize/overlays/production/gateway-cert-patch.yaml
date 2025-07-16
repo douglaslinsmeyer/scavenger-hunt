@@ -1,0 +1,7 @@
+# Add cert-manager annotation to Gateway for automatic certificate management
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: scavenger-hunt-gateway
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod-gateway

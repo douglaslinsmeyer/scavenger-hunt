@@ -6,7 +6,7 @@ spec:
   storageClassName: ssdv2
   resources:
     requests:
-      storage: 10Gi  # Larger size for production
+      storage: 100Gi  # Minimum size required for ssdv2
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -16,4 +16,4 @@ spec:
   storageClassName: ssdv2
   resources:
     requests:
-      storage: 5Gi  # Production size
+      storage: 100Gi  # Minimum size required for ssdv2

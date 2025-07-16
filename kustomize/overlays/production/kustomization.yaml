@@ -7,8 +7,7 @@ resources:
   - ../../base
   - ../../base/gateway-api
   - ../../base/policies
-  - certificate.yaml
-  - security-headers-policy.yaml
+  - certificate-subdomains.yaml
 
 # Labels removed to avoid selector immutability issues
 # Production environment label will be added via deployment patches if needed
@@ -25,6 +24,7 @@ patches:
   - path: deployment-patch.yaml
   - path: gateway-patch.yaml
   - path: storage-patch.yaml
+  - path: gateway-cert-patch.yaml
 
 configMapGenerator:
   - name: app-config
