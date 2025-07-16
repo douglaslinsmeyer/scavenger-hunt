@@ -24,6 +24,7 @@ replicas:
 patchesStrategicMerge:
   - deployment-patch.yaml
   - gateway-patch.yaml
+  - storage-patch.yaml
 
 configMapGenerator:
   - name: app-config

@@ -1,0 +1,14 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: nginx-gateway-access
+  namespace: nginx-gateway
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    namespace: scavenger-hunt-dev
+  to:
+  - group: ""
+    kind: Service
+    name: nginx-gateway

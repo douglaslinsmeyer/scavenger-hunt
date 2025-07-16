@@ -47,6 +47,8 @@ build:
 
 deploy:
   kubectl: {}
+
+manifests:
   kustomize:
     paths:
       - kustomize/overlays/development
@@ -72,7 +74,7 @@ portForward:
 
 profiles:
   - name: staging
-    deploy:
+    manifests:
       kustomize:
         paths:
           - kustomize/overlays/staging
@@ -81,7 +83,7 @@ profiles:
     build:
       tagPolicy:
         gitCommit: {}
-    deploy:
+    manifests:
       kustomize:
         paths:
           - kustomize/overlays/production

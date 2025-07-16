@@ -16,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 // Health check endpoint
-app.get('/health', (_req: Request, res: Response) => {
+app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     message: 'Hello from Scavenger Hunt Backend!',
     status: 'healthy',
@@ -46,7 +46,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 // Start server
 const server = app.listen(PORT, () => {
   console.log(`Backend server running on port ${PORT}`);
-  console.log(`Health check available at http://localhost:${PORT}/health`);
+  console.log(`Health check available at http://localhost:${PORT}/api/health`);
 });
 
 // Graceful shutdown

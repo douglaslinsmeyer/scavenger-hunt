@@ -1,106 +1,47 @@
 # Observability Policies for NGINX Gateway Fabric
-# Configures logging, metrics, and tracing
+# Currently only tracing is supported in v1alpha2
 ---
-# Access Log Policy
-apiVersion: gateway.nginx.org/v1alpha1
+# Tracing Policy for Backend API
+apiVersion: gateway.nginx.org/v1alpha2
 kind: ObservabilityPolicy
 metadata:
-  name: access-log-policy
+  name: backend-tracing-policy
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
-    kind: Gateway
-    name: scavenger-hunt-gateway
-  accessLog:
-    enabled: true
-    format: json
-    fields:
-    - timestamp
-    - method
-    - uri
-    - protocol
-    - status
-    - responseSize
-    - requestTime
-    - upstreamResponseTime
-    - upstreamAddr
-    - upstreamStatus
-    - remoteAddr
-    - xForwardedFor
-    - userAgent
-    - referer
-    - requestId
-    - host
-    filters:
-    # Don't log health checks
-    - condition: 'uri !~ "^/health"'
----
-# Metrics Policy
-apiVersion: gateway.nginx.org/v1alpha1
-kind: ObservabilityPolicy
-metadata:
-  name: metrics-policy
-spec:
-  targetRef:
-    group: gateway.networking.k8s.io
-    kind: Gateway
-    name: scavenger-hunt-gateway
-  metrics:
-    enabled: true
-    port: 9113
-    path: /metrics
-    # Metrics to collect
-    collectors:
-    - requests
-    - connections
-    - upstreams
-    - cache
-    - ssl
----
-# Tracing Policy
-apiVersion: gateway.nginx.org/v1alpha1
-kind: ObservabilityPolicy
-metadata:
-  name: tracing-policy
-spec:
-  targetRef:
-    group: gateway.networking.k8s.io
-    kind: Gateway
-    name: scavenger-hunt-gateway
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: backend-api-route
   tracing:
-    enabled: true
-    # OpenTelemetry configuration
-    otel:
-      endpoint: otel-collector.monitoring:4317
-      serviceName: scavenger-hunt-gateway
-      # Sampling rate (10% of requests)
-      samplingRate: 0.1
-      # Propagation format
-      propagation:
-      - w3c
-      - jaeger
+    strategy: ratio
+    ratio: 10  # Sample 10% of requests
+    context: propagate
 ---
-# Health Check Policy
-apiVersion: gateway.nginx.org/v1alpha1
+# Tracing Policy for Admin Dashboard
+apiVersion: gateway.nginx.org/v1alpha2
 kind: ObservabilityPolicy
 metadata:
-  name: healthcheck-policy
+  name: admin-tracing-policy
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
-    kind: Gateway
-    name: scavenger-hunt-gateway
-  healthCheck:
-    # Upstream health checks
-    upstream:
-      enabled: true
-      interval: 5s
-      timeout: 3s
-      passes: 2
-      fails: 3
-    # Gateway health endpoint
-    status:
-      enabled: true
-      path: /healthz
-      # Include subsystem checks
-      detailed: true
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: admin-dashboard-route
+  tracing:
+    strategy: ratio
+    ratio: 10
+    context: propagate
+---
+# Tracing Policy for Player App
+apiVersion: gateway.nginx.org/v1alpha2
+kind: ObservabilityPolicy
+metadata:
+  name: player-tracing-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: player-app-route
+  tracing:
+    strategy: ratio
+    ratio: 10
+    context: propagate

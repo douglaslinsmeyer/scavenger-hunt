@@ -1,0 +1,69 @@
+# Fix HTTPRoutes to reference services in the correct namespace
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: backend-api-route
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+    backendRefs:
+    - name: backend
+      port: 80
+      namespace: scavenger-hunt-dev
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /socket.io
+    backendRefs:
+    - name: backend
+      port: 80
+      namespace: scavenger-hunt-dev
+  - matches:
+    - path:
+        type: Exact
+        value: /health
+    backendRefs:
+    - name: backend
+      port: 80
+      namespace: scavenger-hunt-dev
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: admin-dashboard-route
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /admin
+    backendRefs:
+    - name: admin
+      port: 80
+      namespace: scavenger-hunt-dev
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /admin/_next
+    backendRefs:
+    - name: admin
+      port: 80
+      namespace: scavenger-hunt-dev
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: player-app-route
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: player
+      port: 80
+      namespace: scavenger-hunt-dev

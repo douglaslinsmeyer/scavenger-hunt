@@ -15,10 +15,23 @@ commonLabels:
 
 patchesStrategicMerge:
   - deployment-patch.yaml
-  - gateway-patch.yaml
+  - gateway-patch-fixed.yaml
+  - storage-patch.yaml
 
 configMapGenerator:
   - name: app-config
     literals:
       - NODE_ENV=development
       - LOG_LEVEL=debug
+
+# Use local images for development
+images:
+  - name: ghcr.io/douglaslinsmeyer/scavenger-hunt-backend
+    newName: scavenger-hunt-backend
+    newTag: local
+  - name: ghcr.io/douglaslinsmeyer/scavenger-hunt-player
+    newName: scavenger-hunt-player  
+    newTag: local
+  - name: ghcr.io/douglaslinsmeyer/scavenger-hunt-admin
+    newName: scavenger-hunt-admin
+    newTag: local

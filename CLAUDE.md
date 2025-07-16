@@ -87,7 +87,14 @@ docker-compose ps               # Check service status
 docker-compose logs [service]   # View logs
 docker-compose down             # Stop and remove containers
 
-skaffold dev                    # Hot reload with Kubernetes
+# Kubernetes with Skaffold (PREFERRED for development)
+skaffold dev                    # Hot reload with automatic port forwarding
+# Access points when running:
+# - Backend API: http://localhost:3000
+# - Player App: http://localhost:3001  
+# - Admin Dashboard: http://localhost:3002/admin
+# Note: Admin app has basePath /admin, so health check is at /admin/health
+
 kubectl apply -k kustomize/overlays/development
 
 # Tests
@@ -159,9 +166,30 @@ kustomize/          # Kubernetes configurations
 - JWT tokens with appropriate expiration
 - Photo uploads limited by size and type
 
+## Local Development Setup
+
+### Prerequisites
+- Docker Desktop with Kubernetes enabled (or Minikube/Kind)
+- Skaffold v2.16+ for automated development workflow
+- kubectl for Kubernetes management
+- NGINX Gateway Controller installed in cluster (gatewayclass: nginx)
+
+### Known Issues & Solutions
+1. **GatewayClass conflict**: The base kustomization includes gatewayclass.yaml but this conflicts with existing NGINX Gateway Controller. Removed from base/gateway-api/kustomization.yaml
+2. **ObservabilityPolicy API version**: Must use v1alpha2, not v1alpha1. Only tracing is supported in v1alpha2.
+3. **Admin health checks**: The admin app uses basePath `/admin`, so health checks must use `/admin/health` not `/health`
+4. **Next.js standalone builds**: Both frontend apps use `output: 'standalone'` for smaller Docker images
+
+### Development Workflow
+1. Run `skaffold dev` from project root
+2. Wait for all pods to be ready (check with `kubectl get pods -n scavenger-hunt-dev`)
+3. Access services via localhost with automatic port forwarding
+4. File changes trigger automatic rebuilds/redeployments
+5. Use Ctrl+C to stop - Skaffold will clean up resources
+
 ## Deployment
 
-- **Local**: Minikube/Kind with Skaffold
+- **Local**: Docker Desktop/Minikube/Kind with Skaffold
 - **Staging/Production**: Kubernetes on Rackspace
 - **CI/CD**: GitHub Actions with automated tests
 - **Monitoring**: Prometheus + Grafana, ELK stack for logs

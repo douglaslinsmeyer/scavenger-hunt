@@ -5,6 +5,15 @@ namespace: scavenger-hunt
 
 resources:
   - namespace.yaml
+  # PostgreSQL database
+  - postgres-pvc.yaml
+  - postgres-deployment.yaml
+  - postgres-service.yaml
+  # Redis cache
+  - redis-pvc.yaml
+  - redis-deployment.yaml
+  - redis-service.yaml
+  # Application services
   - backend-deployment.yaml
   - backend-service.yaml
   - player-deployment.yaml
@@ -19,9 +28,10 @@ resources:
   # - gateway-api/    # Production-specific, moved to production overlay
   # - policies/       # Production-specific, moved to production overlay
 
-commonLabels:
-  app.kubernetes.io/name: scavenger-hunt
-  app.kubernetes.io/part-of: scavenger-hunt
+labels:
+  - pairs:
+      app.kubernetes.io/name: scavenger-hunt
+      app.kubernetes.io/part-of: scavenger-hunt
 
 images:
   - name: scavenger-hunt-backend

@@ -11,6 +11,10 @@ spec:
           env:
             - name: NODE_ENV
               value: "development"
+            - name: DATABASE_URL
+              value: "postgresql://postgres:password@dev-postgres:5432/scavenger_hunt"
+            - name: REDIS_URL
+              value: "redis://dev-redis:6379"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -25,6 +29,10 @@ spec:
           env:
             - name: NODE_ENV
               value: "development"
+            - name: NEXT_PUBLIC_API_URL
+              value: "http://dev-backend:3000"
+          securityContext:
+            readOnlyRootFilesystem: false
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -39,3 +47,15 @@ spec:
           env:
             - name: NODE_ENV
               value: "development"
+            - name: NEXT_PUBLIC_API_URL
+              value: "http://dev-backend:3000"
+          securityContext:
+            readOnlyRootFilesystem: false
+          livenessProbe:
+            httpGet:
+              path: /admin/health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /admin/health
+              port: http
