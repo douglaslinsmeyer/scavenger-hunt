@@ -5,7 +5,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: scavenger-hunt-gateway
-  namespace: scavenger-hunt-prod
 spec:
   addresses:
   - type: Hostname
@@ -16,7 +15,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: backend-api-route
-  namespace: scavenger-hunt-prod
 spec:
   hostnames:
   - scavenger-hunt.linsmeyer.com
@@ -26,7 +24,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: admin-dashboard-route
-  namespace: scavenger-hunt-prod
 spec:
   hostnames:
   - scavenger-hunt.linsmeyer.com
@@ -36,7 +33,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: player-app-route
-  namespace: scavenger-hunt-prod
 spec:
   hostnames:
   - scavenger-hunt.linsmeyer.com
@@ -46,32 +42,16 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: https-redirect
-  namespace: scavenger-hunt-prod
 spec:
   hostnames:
   - scavenger-hunt.linsmeyer.com
   - "*.scavenger-hunt.linsmeyer.com"
----
-# Production Certificate
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: scavenger-hunt-tls
-  namespace: scavenger-hunt-prod
-spec:
-  dnsNames:
-  - scavenger-hunt.linsmeyer.com
-  - "*.scavenger-hunt.linsmeyer.com"
-  issuerRef:
-    name: letsencrypt-prod
-    kind: ClusterIssuer
 ---
 # Stricter rate limits for production
 apiVersion: gateway.nginx.org/v1alpha1
 kind: ClientSettingsPolicy
 metadata:
   name: api-ratelimit-policy
-  namespace: scavenger-hunt-prod
 spec:
   rateLimit:
     requests: 60  # Reduced from 100 for production
@@ -82,28 +62,7 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ObservabilityPolicy
 metadata:
   name: tracing-policy
-  namespace: scavenger-hunt-prod
 spec:
   tracing:
     otel:
       samplingRate: 0.05  # 5% sampling in production (reduced from 10%)
----
-# Production-specific security headers
-apiVersion: gateway.nginx.org/v1alpha1
-kind: ClientSettingsPolicy
-metadata:
-  name: security-headers-policy
-  namespace: scavenger-hunt-prod
-spec:
-  targetRef:
-    group: gateway.networking.k8s.io
-    kind: Gateway
-    name: scavenger-hunt-gateway
-  headers:
-    add:
-    - name: Strict-Transport-Security
-      value: "max-age=63072000; includeSubDomains; preload"
-    - name: Content-Security-Policy
-      value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' wss://*.scavenger-hunt.linsmeyer.com"
-    - name: Permissions-Policy
-      value: "geolocation=(self), camera=(self), microphone=()"

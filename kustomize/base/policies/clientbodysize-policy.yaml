@@ -6,7 +6,6 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ClientSettingsPolicy
 metadata:
   name: api-bodysize-policy
-  namespace: scavenger-hunt-prod
 spec:
   targetRef:
     group: gateway.networking.k8s.io
@@ -28,7 +27,6 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ClientSettingsPolicy
 metadata:
   name: admin-bodysize-policy
-  namespace: scavenger-hunt-prod
 spec:
   targetRef:
     group: gateway.networking.k8s.io
@@ -48,7 +46,6 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ClientSettingsPolicy
 metadata:
   name: player-bodysize-policy
-  namespace: scavenger-hunt-prod
 spec:
   targetRef:
     group: gateway.networking.k8s.io
@@ -66,7 +63,6 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ClientSettingsPolicy
 metadata:
   name: header-size-policy
-  namespace: scavenger-hunt-prod
 spec:
   targetRef:
     group: gateway.networking.k8s.io

@@ -3,7 +3,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: backend-api-route
-  namespace: scavenger-hunt-prod
 spec:
   parentRefs:
   - name: scavenger-hunt-gateway
@@ -60,7 +59,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: admin-dashboard-route
-  namespace: scavenger-hunt-prod
 spec:
   parentRefs:
   - name: scavenger-hunt-gateway
@@ -112,7 +110,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: player-app-route
-  namespace: scavenger-hunt-prod
 spec:
   parentRefs:
   - name: scavenger-hunt-gateway
@@ -138,7 +135,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: https-redirect
-  namespace: scavenger-hunt-prod
 spec:
   parentRefs:
   - name: scavenger-hunt-gateway

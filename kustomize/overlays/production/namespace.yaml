@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: scavenger-hunt-prod
-  labels:
-    app.kubernetes.io/name: scavenger-hunt
-    environment: production

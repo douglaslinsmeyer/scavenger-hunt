@@ -1,0 +1,13 @@
+# Staging Certificate (using Let's Encrypt staging)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: scavenger-hunt-tls
+spec:
+  secretName: scavenger-hunt-tls
+  dnsNames:
+  - staging.scavengerhunt.example.com
+  - "*.staging.scavengerhunt.example.com"
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer

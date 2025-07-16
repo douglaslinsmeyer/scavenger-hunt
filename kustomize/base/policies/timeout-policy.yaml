@@ -6,7 +6,6 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ClientSettingsPolicy
 metadata:
   name: api-timeout-policy
-  namespace: scavenger-hunt-prod
 spec:
   targetRef:
     group: gateway.networking.k8s.io
@@ -40,7 +39,6 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ClientSettingsPolicy
 metadata:
   name: websocket-timeout-policy
-  namespace: scavenger-hunt-prod
 spec:
   targetRef:
     group: gateway.networking.k8s.io
@@ -64,7 +62,6 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ClientSettingsPolicy
 metadata:
   name: frontend-timeout-policy
-  namespace: scavenger-hunt-prod
 spec:
   targetRef:
     group: gateway.networking.k8s.io
@@ -91,7 +88,6 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ClientSettingsPolicy
 metadata:
   name: player-timeout-policy
-  namespace: scavenger-hunt-prod
 spec:
   targetRef:
     group: gateway.networking.k8s.io
@@ -117,7 +113,6 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ClientSettingsPolicy
 metadata:
   name: circuit-breaker-policy
-  namespace: scavenger-hunt-prod
 spec:
   targetRef:
     group: gateway.networking.k8s.io

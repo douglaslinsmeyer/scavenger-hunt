@@ -3,8 +3,11 @@ kind: Kustomization
 
 namespace: scavenger-hunt-staging
 
-bases:
+resources:
   - ../../base
+  - ../../base/gateway-api
+  - ../../base/policies
+  - certificate.yaml
 
 namePrefix: staging-
 

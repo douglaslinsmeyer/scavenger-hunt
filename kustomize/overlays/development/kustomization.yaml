@@ -3,8 +3,10 @@ kind: Kustomization
 
 namespace: scavenger-hunt-dev
 
-bases:
+resources:
   - ../../base
+  - ../../base/gateway-api
+  - ../../base/policies
 
 namePrefix: dev-
 

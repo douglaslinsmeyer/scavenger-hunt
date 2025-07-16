@@ -15,9 +15,9 @@ resources:
   # - ingress.yaml
   
   # NGINX Fabric Gateway resources
-  - nginx-fabric/
-  - gateway-api/
-  - policies/
+  # - nginx-fabric/  # Should be deployed separately to nginx-gateway namespace
+  # - gateway-api/    # Production-specific, moved to production overlay
+  # - policies/       # Production-specific, moved to production overlay
 
 commonLabels:
   app.kubernetes.io/name: scavenger-hunt

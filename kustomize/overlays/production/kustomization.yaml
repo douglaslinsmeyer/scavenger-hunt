@@ -4,10 +4,11 @@ kind: Kustomization
 namespace: scavenger-hunt-prod
 
 resources:
-  - namespace.yaml
-
-bases:
-  - ../../base/app
+  - ../../base
+  - ../../base/gateway-api
+  - ../../base/policies
+  - certificate.yaml
+  - security-headers-policy.yaml
 
 commonLabels:
   environment: production

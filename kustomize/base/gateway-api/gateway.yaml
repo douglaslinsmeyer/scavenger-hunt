@@ -3,7 +3,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: scavenger-hunt-gateway
-  namespace: scavenger-hunt-prod
 spec:
   gatewayClassName: nginx
   listeners:

@@ -1,0 +1,18 @@
+# Production-specific security headers
+apiVersion: gateway.nginx.org/v1alpha1
+kind: ClientSettingsPolicy
+metadata:
+  name: security-headers-policy
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: scavenger-hunt-gateway
+  headers:
+    add:
+    - name: Strict-Transport-Security
+      value: "max-age=63072000; includeSubDomains; preload"
+    - name: Content-Security-Policy
+      value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' wss://*.scavenger-hunt.linsmeyer.com"
+    - name: Permissions-Policy
+      value: "geolocation=(self), camera=(self), microphone=()"

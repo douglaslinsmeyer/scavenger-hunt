@@ -5,7 +5,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: scavenger-hunt-gateway
-  namespace: scavenger-hunt-dev
 spec:
   listeners:
   # Only HTTP in development
@@ -29,7 +28,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: backend-api-route
-  namespace: scavenger-hunt-dev
 spec:
   parentRefs:
   - name: scavenger-hunt-gateway
@@ -42,7 +40,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: admin-dashboard-route
-  namespace: scavenger-hunt-dev
 spec:
   parentRefs:
   - name: scavenger-hunt-gateway
@@ -55,7 +52,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: player-app-route
-  namespace: scavenger-hunt-dev
 spec:
   parentRefs:
   - name: scavenger-hunt-gateway
@@ -69,7 +65,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: https-redirect
-  namespace: scavenger-hunt-dev
 spec:
   $patch: delete
 ---
@@ -78,7 +73,6 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ClientSettingsPolicy
 metadata:
   name: api-ratelimit-policy
-  namespace: scavenger-hunt-dev
 spec:
   rateLimit:
     requests: 1000  # Very high for development
@@ -90,7 +84,6 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ClientSettingsPolicy
 metadata:
   name: connection-limit-policy
-  namespace: scavenger-hunt-dev
 spec:
   connectionLimit:
     connections: 1000
@@ -101,7 +94,6 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ObservabilityPolicy
 metadata:
   name: tracing-policy
-  namespace: scavenger-hunt-dev
 spec:
   tracing:
     otel:
@@ -112,7 +104,6 @@ apiVersion: gateway.nginx.org/v1alpha1
 kind: ObservabilityPolicy
 metadata:
   name: access-log-policy
-  namespace: scavenger-hunt-dev
 spec:
   accessLog:
     filters: []  # Log everything including health checks
