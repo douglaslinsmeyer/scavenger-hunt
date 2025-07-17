@@ -34,8 +34,8 @@ jobs:
 
       - name: Install cert-manager
         run: |
-          echo "=== Installing cert-manager v1.15.0 ==="
-          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.0/cert-manager.yaml
+          echo "=== Installing cert-manager v1.18.2 ==="
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.18.2/cert-manager.yaml
           
           echo "=== Waiting for cert-manager namespace ==="
           kubectl wait --for=condition=Established namespace/cert-manager --timeout=60s || true
@@ -55,7 +55,7 @@ jobs:
         run: |
           echo "=== cert-manager Installation Summary ==="
           echo
-          echo "✅ cert-manager v1.15.0 installed successfully!"
+          echo "✅ cert-manager v1.18.2 installed successfully!"
           echo
           echo "=== Next Steps ==="
           echo "1. Deploy the ClusterIssuers for Let's Encrypt"

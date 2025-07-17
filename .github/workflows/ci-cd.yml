@@ -215,9 +215,9 @@ jobs:
             if ! kubectl get crd certificates.cert-manager.io >/dev/null 2>&1; then
               echo "cert-manager CRDs not found. Installing cert-manager..."
               
-              # Install cert-manager v1.15.0
-              echo "Installing cert-manager v1.15.0..."
-              kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.0/cert-manager.yaml
+              # Install cert-manager v1.18.2
+              echo "Installing cert-manager v1.18.2..."
+              kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.18.2/cert-manager.yaml
               
               # Wait for cert-manager namespace
               echo "Waiting for cert-manager namespace..."
