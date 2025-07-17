@@ -205,7 +205,84 @@ jobs:
             # Verify CRDs are installed
             kubectl get crd clientsettingspolicies.gateway.nginx.org
           else
-            echo "Prerequisites already installed"
+            echo "NGINX Gateway Fabric prerequisites already installed"
+          fi
+          
+          # Check if cert-manager is needed (only for production)
+          if [ "${{ matrix.environment }}" = "production" ]; then
+            echo "Checking for cert-manager CRDs..."
+            
+            if ! kubectl get crd certificates.cert-manager.io >/dev/null 2>&1; then
+              echo "cert-manager CRDs not found. Installing cert-manager..."
+              
+              # Install cert-manager v1.15.0
+              echo "Installing cert-manager v1.15.0..."
+              kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.0/cert-manager.yaml
+              
+              # Wait for cert-manager namespace
+              echo "Waiting for cert-manager namespace..."
+              kubectl wait --for=condition=Established namespace/cert-manager --timeout=60s || true
+              
+              # Wait for cert-manager deployments
+              echo "Waiting for cert-manager deployments to be ready..."
+              kubectl wait --for=condition=available --timeout=300s deployment/cert-manager -n cert-manager
+              kubectl wait --for=condition=available --timeout=300s deployment/cert-manager-webhook -n cert-manager
+              kubectl wait --for=condition=available --timeout=300s deployment/cert-manager-cainjector -n cert-manager
+              
+              # Verify cert-manager pods
+              echo "Verifying cert-manager pods..."
+              kubectl get pods -n cert-manager
+              
+              # Verify CRDs are installed
+              kubectl get crd | grep cert-manager
+              
+              echo "cert-manager installed successfully!"
+              
+              # Create ClusterIssuers for Let's Encrypt
+              echo "Creating ClusterIssuers for Let's Encrypt..."
+              cat <<EOF | kubectl apply -f -
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod-gateway
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: doug@linsmeyer.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+    - http01:
+        gatewayHTTPRoute:
+          parentRefs:
+          - name: scavenger-hunt-gateway
+            namespace: scavenger-hunt-prod
+            kind: Gateway
+            group: gateway.networking.k8s.io
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging-gateway
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: doug@linsmeyer.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+    - http01:
+        gatewayHTTPRoute:
+          parentRefs:
+          - name: scavenger-hunt-gateway
+            namespace: scavenger-hunt-prod
+            kind: Gateway
+            group: gateway.networking.k8s.io
+EOF
+              echo "ClusterIssuers created successfully!"
+            else
+              echo "cert-manager already installed"
+            fi
           fi
 
       - name: Deploy to Kubernetes
