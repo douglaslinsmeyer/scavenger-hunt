@@ -60,18 +60,18 @@ describe('Player Frontend Health Check Utilities', () => {
       });
     });
 
-    it('should include NEXT_PUBLIC_ environment variables', () => {
-      process.env.NEXT_PUBLIC_API_URL = 'http://test-api.com';
-      process.env.NEXT_PUBLIC_APP_NAME = 'Test App';
+    it('should include API_URL environment variable', () => {
+      process.env.API_URL = 'http://test-api.com';
+      process.env.WS_URL = 'ws://test-ws.com';
       
       const envInfo = getEnvironmentInfo();
       
-      expect(envInfo.NEXT_PUBLIC_API_URL).toBe('http://test-api.com');
-      expect(envInfo.NEXT_PUBLIC_APP_NAME).toBe('Test App');
+      expect(envInfo.API_URL).toBe('http://test-api.com');
+      expect(envInfo.WS_URL).toBe('ws://test-ws.com');
       
       // Clean up
-      delete process.env.NEXT_PUBLIC_API_URL;
-      delete process.env.NEXT_PUBLIC_APP_NAME;
+      delete process.env.API_URL;
+      delete process.env.WS_URL;
     });
   });
 

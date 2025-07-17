@@ -113,9 +113,10 @@ export function getEnvironmentInfo(): EnvironmentInfo {
     basePath: '/admin', // From next.config.js
   };
 
-  // Add all NEXT_PUBLIC_ environment variables
-  Object.keys(process.env).forEach((key) => {
-    if (key.startsWith('NEXT_PUBLIC_')) {
+  // Add relevant environment variables
+  const relevantEnvVars = ['API_URL', 'BACKEND_BASE_URL', 'BASE_PATH', 'OAUTH_ENABLED'];
+  relevantEnvVars.forEach((key) => {
+    if (process.env[key]) {
       publicEnvVars[key] = process.env[key] as string;
     }
   });

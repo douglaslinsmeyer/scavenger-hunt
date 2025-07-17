@@ -64,18 +64,18 @@ describe('Admin Frontend Health Check Utilities', () => {
       });
     });
 
-    it('should include NEXT_PUBLIC_ environment variables', () => {
-      process.env.NEXT_PUBLIC_API_URL = 'http://test-api.com';
-      process.env.NEXT_PUBLIC_OAUTH_ENABLED = 'true';
+    it('should include API_URL and OAUTH_ENABLED environment variables', () => {
+      process.env.API_URL = 'http://test-api.com';
+      process.env.OAUTH_ENABLED = 'true';
       
       const envInfo = getEnvironmentInfo();
       
-      expect(envInfo.NEXT_PUBLIC_API_URL).toBe('http://test-api.com');
-      expect(envInfo.NEXT_PUBLIC_OAUTH_ENABLED).toBe('true');
+      expect(envInfo.API_URL).toBe('http://test-api.com');
+      expect(envInfo.OAUTH_ENABLED).toBe('true');
       
       // Clean up
-      delete process.env.NEXT_PUBLIC_API_URL;
-      delete process.env.NEXT_PUBLIC_OAUTH_ENABLED;
+      delete process.env.API_URL;
+      delete process.env.OAUTH_ENABLED;
     });
   });
 

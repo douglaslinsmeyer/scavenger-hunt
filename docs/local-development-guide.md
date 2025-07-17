@@ -189,7 +189,7 @@ Default development values are set in the ConfigMap:
 ### Frontend Environment Variables
 
 - `NODE_ENV=development`
-- `NEXT_PUBLIC_API_URL=http://dev-backend:3000`
+- `API_URL=http://dev-backend:3000`
 - Player app runs on port 3001
 - Admin app runs on port 3002 with basePath `/admin`
 

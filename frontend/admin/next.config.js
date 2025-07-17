@@ -4,13 +4,13 @@ const nextConfig = {
   output: 'standalone',
   
   // Configure base path for admin app when deployed
-  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '/admin',
-  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '/admin',
+  basePath: process.env.BASE_PATH || '/admin',
+  assetPrefix: process.env.BASE_PATH || '/admin',
   
   // Environment variables
   env: {
-    NEXT_PUBLIC_BACKEND_BASE_URL: process.env.BACKEND_BASE_URL || 'http://localhost/api',
-    NEXT_PUBLIC_BASE_PATH: process.env.NEXT_PUBLIC_BASE_PATH || '/admin',
+    BACKEND_BASE_URL: process.env.BACKEND_BASE_URL || 'http://localhost/api',
+    BASE_PATH: process.env.BASE_PATH || '/admin',
   },
 
   // Headers for security

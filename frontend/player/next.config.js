@@ -7,8 +7,8 @@ const nextConfig = {
   
   // Environment variables
   env: {
-    NEXT_PUBLIC_BACKEND_BASE_URL: process.env.BACKEND_BASE_URL || 'http://localhost/api',
-    NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3000',
+    BACKEND_BASE_URL: process.env.BACKEND_BASE_URL || 'http://localhost/api',
+    WS_URL: process.env.WS_URL || 'ws://localhost:3000',
   },
 
   // Headers for security

@@ -104,9 +104,10 @@ export function getEnvironmentInfo(): EnvironmentInfo {
     nodeEnv: process.env.NODE_ENV || 'development',
   };
 
-  // Add all NEXT_PUBLIC_ environment variables
-  Object.keys(process.env).forEach((key) => {
-    if (key.startsWith('NEXT_PUBLIC_')) {
+  // Add relevant environment variables
+  const relevantEnvVars = ['API_URL', 'BACKEND_BASE_URL', 'WS_URL'];
+  relevantEnvVars.forEach((key) => {
+    if (process.env[key]) {
       publicEnvVars[key] = process.env[key] as string;
     }
   });

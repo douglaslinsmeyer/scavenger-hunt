@@ -240,45 +240,8 @@ jobs:
               
               # Create ClusterIssuers for Let's Encrypt
               echo "Creating ClusterIssuers for Let's Encrypt..."
-              cat <<EOF | kubectl apply -f -
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-prod-gateway
-spec:
-  acme:
-    server: https://acme-v02.api.letsencrypt.org/directory
-    email: doug@linsmeyer.com
-    privateKeySecretRef:
-      name: letsencrypt-prod-account-key
-    solvers:
-    - http01:
-        gatewayHTTPRoute:
-          parentRefs:
-          - name: scavenger-hunt-gateway
-            namespace: scavenger-hunt-prod
-            kind: Gateway
-            group: gateway.networking.k8s.io
----
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-staging-gateway
-spec:
-  acme:
-    server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: doug@linsmeyer.com
-    privateKeySecretRef:
-      name: letsencrypt-staging-account-key
-    solvers:
-    - http01:
-        gatewayHTTPRoute:
-          parentRefs:
-          - name: scavenger-hunt-gateway
-            namespace: scavenger-hunt-prod
-            kind: Gateway
-            group: gateway.networking.k8s.io
-EOF
+              kubectl apply -f .github/cert-manager/letsencrypt-prod-issuer.yaml
+              kubectl apply -f .github/cert-manager/letsencrypt-staging-issuer.yaml
               echo "ClusterIssuers created successfully!"
             else
               echo "cert-manager already installed"
