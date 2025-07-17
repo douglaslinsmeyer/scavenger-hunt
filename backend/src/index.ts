@@ -61,18 +61,24 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
-// Start server
-const server = app.listen(PORT, () => {
-  console.log(`Backend server running on port ${PORT}`);
-  console.log(`Health check available at http://localhost:${PORT}/api/health`);
-});
+// Start server only if not in test environment
+let server: ReturnType<typeof app.listen> | undefined;
+if (process.env.NODE_ENV !== 'test') {
+  server = app.listen(PORT, () => {
+    console.log(`Backend server running on port ${PORT}`);
+    console.log(`Health check available at http://localhost:${PORT}/api/health`);
+  });
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-  });
+  if (server) {
+    server.close(() => {
+      console.log('HTTP server closed');
+    });
+  }
 });
 
 export default app;
+export { server };

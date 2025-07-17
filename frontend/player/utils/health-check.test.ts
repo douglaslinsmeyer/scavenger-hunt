@@ -168,13 +168,44 @@ describe('Player Frontend Health Check Utilities', () => {
     });
 
     it('should timeout after 5 seconds', async () => {
-      // Mock fetch to never resolve
-      (global.fetch as jest.Mock).mockImplementationOnce(() => new Promise(() => {}));
+      // Mock AbortController
+      const mockAbort = jest.fn();
+      const mockSignal = { aborted: false };
+      
+      jest.spyOn(global, 'AbortController').mockImplementation(() => ({
+        abort: mockAbort,
+        signal: mockSignal as any,
+      }));
+
+      // Mock setTimeout to capture the timeout callback
+      const timeoutCallbacks: Array<() => void> = [];
+      jest.spyOn(global, 'setTimeout').mockImplementation((callback: any) => {
+        timeoutCallbacks.push(callback);
+        return 123 as any; // Return a mock timer ID
+      });
+
+      // Mock clearTimeout
+      jest.spyOn(global, 'clearTimeout').mockImplementation(() => {});
+
+      // Mock fetch to throw an abort error when called
+      (global.fetch as jest.Mock).mockImplementationOnce(() => {
+        // Simulate the timeout by calling the abort
+        if (timeoutCallbacks.length > 0) {
+          mockSignal.aborted = true;
+          timeoutCallbacks[0]();
+        }
+        return Promise.reject(new Error('Request timeout'));
+      });
 
       const result = await checkBackendConnection();
       
       expect(result.status).toBe('disconnected');
-    }, 10000); // Increase test timeout
+      expect(result.error).toBe('Request timeout');
+      expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
+      
+      // Restore mocks
+      jest.restoreAllMocks();
+    });
   });
 
   describe('buildHealthCheckResponse', () => {

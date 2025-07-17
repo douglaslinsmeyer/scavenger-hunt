@@ -32,7 +32,7 @@ export interface RuntimeInfo {
 export interface EnvironmentInfo {
   nodeEnv: string;
   port: number | string;
-  [key: string]: any;
+  [key: string]: string | number | undefined;
 }
 
 export interface DependenciesInfo {
@@ -172,11 +172,14 @@ export async function buildHealthCheckResponse(
   // Determine overall health status based on dependencies
   let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
   
-  if (dependencies.database?.status === 'error' || dependencies.database?.status === 'disconnected') {
-    // Database is critical, so mark as unhealthy if it's down
+  // Database is critical, so mark as unhealthy if it's down
+  if (dependencies.database?.status === 'error') {
     status = 'unhealthy';
-  } else if (dependencies.redis?.status === 'error' || dependencies.redis?.status === 'disconnected') {
-    // Redis is non-critical, so mark as degraded if it's down
+  } else if (dependencies.database?.status === 'disconnected' && dependencies.database?.error !== 'Database not configured') {
+    // Only mark as unhealthy if database is disconnected but was supposed to be configured
+    status = 'unhealthy';
+  } else if (dependencies.redis?.status === 'error') {
+    // Redis errors are non-critical, so mark as degraded
     status = 'degraded';
   }
 
