@@ -25,8 +25,8 @@ echo "===================================================="
 curl -v -H "Host: $DOMAIN" "http://$IP/admin" 2>&1 | grep -E "(< HTTP|< Location|Empty reply)" | head -5
 echo ""
 
-echo "4. Testing /health path (should hit backend health check):"
-echo "=========================================================="
+echo "4. Testing /health path (should hit player app health check):"
+echo "============================================================="
 curl -v -H "Host: $DOMAIN" "http://$IP/health" 2>&1 | grep -E "(< HTTP|< Location|Empty reply)" | head -5
 echo ""
 

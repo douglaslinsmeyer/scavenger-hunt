@@ -4,10 +4,9 @@ describe('Backend Deployment', () => {
   const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
 
   describe('Health Check Endpoint', () => {
-    it('should respond with hello world message on /health', async () => {
-      // This test will fail initially (Red phase)
+    it('should respond with hello world message on /api/health', async () => {
       const response = await request(backendUrl)
-        .get('/health')
+        .get('/api/health')
         .expect('Content-Type', /json/)
         .expect(200);
 
@@ -18,9 +17,27 @@ describe('Backend Deployment', () => {
       });
     });
 
+    it('should return detailed health check with verbose flag', async () => {
+      const response = await request(backendUrl)
+        .get('/api/health?verbose=true')
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        message: 'Hello from Scavenger Hunt Backend!',
+        status: expect.stringMatching(/^(healthy|degraded|unhealthy)$/),
+        timestamp: expect.any(String),
+        version: expect.any(Object),
+        runtime: expect.any(Object),
+        environment: expect.any(Object),
+        system: expect.any(Object),
+        dependencies: expect.any(Object),
+      });
+    });
+
     it('should include proper CORS headers', async () => {
       const response = await request(backendUrl)
-        .get('/health')
+        .get('/api/health')
         .expect(200);
 
       expect(response.headers['access-control-allow-origin']).toBeDefined();
@@ -39,7 +56,7 @@ describe('Backend Deployment', () => {
     it('should be accessible and running', async () => {
       // Test that the application is deployed and accessible
       const response = await request(backendUrl)
-        .get('/health')
+        .get('/api/health')
         .timeout(5000); // 5 second timeout
 
       expect(response.status).toBe(200);
@@ -48,7 +65,7 @@ describe('Backend Deployment', () => {
 
     it('should have required environment configuration', async () => {
       const response = await request(backendUrl)
-        .get('/health')
+        .get('/api/health')
         .expect(200);
 
       // Verify the deployment has proper configuration

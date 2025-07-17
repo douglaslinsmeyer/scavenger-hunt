@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import { buildHealthCheckResponse } from './utils/health-check';
 
 // Load environment variables
 dotenv.config();
@@ -16,12 +17,29 @@ app.use(cors());
 app.use(express.json());
 
 // Health check endpoint
-app.get('/api/health', (_req: Request, res: Response) => {
-  res.json({
-    message: 'Hello from Scavenger Hunt Backend!',
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-  });
+app.get('/api/health', async (req: Request, res: Response) => {
+  try {
+    const verbose = req.query.verbose === 'true';
+    const healthCheck = await buildHealthCheckResponse(verbose);
+    
+    // Set appropriate HTTP status code based on health status
+    let statusCode = 200;
+    if (healthCheck.status === 'unhealthy') {
+      statusCode = 503; // Service Unavailable
+    } else if (healthCheck.status === 'degraded') {
+      statusCode = 200; // Still return 200 for degraded to not trigger unnecessary alerts
+    }
+    
+    res.status(statusCode).json(healthCheck);
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(500).json({
+      status: 'unhealthy',
+      message: 'Health check failed',
+      timestamp: new Date().toISOString(),
+      error: process.env.NODE_ENV === 'production' ? 'Internal error' : (error as Error).message,
+    });
+  }
 });
 
 // 404 handler

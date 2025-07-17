@@ -17,6 +17,7 @@ patches:
   - path: deployment-patch.yaml
   - path: gateway-patch.yaml
   - path: storage-patch.yaml
+  - path: httproute-hostnames-patch.yaml
 
 configMapGenerator:
   - name: app-config

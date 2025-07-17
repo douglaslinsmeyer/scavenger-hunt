@@ -1,0 +1,27 @@
+# Add additional hostnames for internal pod access
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: backend-api-route
+spec:
+  hostnames:
+  - localhost
+  - nginx-gateway.nginx-gateway.svc.cluster.local
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: admin-dashboard-route
+spec:
+  hostnames:
+  - localhost
+  - nginx-gateway.nginx-gateway.svc.cluster.local
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: player-app-route
+spec:
+  hostnames:
+  - localhost
+  - nginx-gateway.nginx-gateway.svc.cluster.local

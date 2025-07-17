@@ -9,37 +9,16 @@ build:
       context: backend
       docker:
         dockerfile: Dockerfile
-      sync:
-        manual:
-          - src: 'src/**/*.ts'
-            dest: /app
-            strip: src/
 
     - image: scavenger-hunt-player
       context: frontend/player
       docker:
         dockerfile: Dockerfile
-      sync:
-        manual:
-          - src: 'app/**/*.tsx'
-            dest: /app
-            strip: app/
-          - src: 'app/**/*.ts'
-            dest: /app
-            strip: app/
 
     - image: scavenger-hunt-admin
       context: frontend/admin
       docker:
         dockerfile: Dockerfile
-      sync:
-        manual:
-          - src: 'app/**/*.tsx'
-            dest: /app
-            strip: app/
-          - src: 'app/**/*.ts'
-            dest: /app
-            strip: app/
 
   local:
     push: false
@@ -73,6 +52,66 @@ portForward:
     localPort: 3002
 
 profiles:
+  - name: dev
+    build:
+      artifacts:
+        - image: scavenger-hunt-backend
+          context: backend
+          docker:
+            dockerfile: Dockerfile.dev
+          sync:
+            manual:
+              - src: 'src/**/*.ts'
+                dest: /app/src
+              - src: 'src/**/*.js'
+                dest: /app/src
+              - src: 'package.json'
+                dest: /app
+              - src: 'tsconfig.json'
+                dest: /app
+
+        - image: scavenger-hunt-player
+          context: frontend/player
+          docker:
+            dockerfile: Dockerfile.dev
+          sync:
+            manual:
+              - src: 'app/**/*'
+                dest: /app/app
+              - src: 'components/**/*'
+                dest: /app/components
+              - src: 'utils/**/*'
+                dest: /app/utils
+              - src: 'public/**/*'
+                dest: /app/public
+              - src: 'package.json'
+                dest: /app
+              - src: 'next.config.js'
+                dest: /app
+              - src: 'tsconfig.json'
+                dest: /app
+
+        - image: scavenger-hunt-admin
+          context: frontend/admin
+          docker:
+            dockerfile: Dockerfile.dev
+          sync:
+            manual:
+              - src: 'app/**/*'
+                dest: /app/app
+              - src: 'components/**/*'
+                dest: /app/components
+              - src: 'utils/**/*'
+                dest: /app/utils
+              - src: 'public/**/*'
+                dest: /app/public
+              - src: 'package.json'
+                dest: /app
+              - src: 'next.config.js'
+                dest: /app
+              - src: 'tsconfig.json'
+                dest: /app
+
   - name: production
     build:
       tagPolicy:
